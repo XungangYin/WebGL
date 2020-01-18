@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+  <title>裁剪测试</title>
+  <!--<script src="../Cesium/Build/Cesium/Cesium.js"></script>-->
+  <script src="js/Build/Cesium/Cesium.js"></script>
+  <script src="Sandcastle/Sandcastle-header.js"></script>
+
+  <link href="js/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <style>
+    html,
+    body,
+    #cesiumContainer {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #000000;
+    }
+  </style>
+
+</head>
+
+<body>
+  <div id="cesiumContainer">
+  </div>
+  <script>
+      Cesium.Ion.defaultAccessToken="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIzMTc3NjhkOC0xYmExLTQwOTYtYTYwZS05YzQ4YzNhZWVhM2QiLCJpZCI6NTkwNywic2NvcGVzIjpbImFzciIsImdjIl0sImlhdCI6MTU0NDU5NTA4Nn0.-4tFtV4jM36IJTT7s8S1VrioG-hZSA9Wf9eKtR-kS7k";
+
+    //   var viewer = new Cesium.Viewer('cesiumContainer', {
+    //   imageryProvider: new Cesium.UrlTemplateImageryProvider({
+    //     url: 'http://www.google.cn/maps/vt?lyrs=s@716&x={x}&y={y}&z={z}'
+    //   })
+    // });
+
+      var terrainProvider = Cesium.createWorldTerrain({
+          requestVertexNormals: true //Needed to visualize slope
+      });
+      var viewer = new Cesium.Viewer('cesiumContainer', {
+          shouldAnimate:true,
+          terrainProvider : terrainProvider,
+          baseLayerPicker:true, //显示图层选择
+          timeline:true,
+          animation:true,
+          vrButton:true,
+          sceneModePicker:true,
+          infoBox:true,   //显示点击要素之后的显示信息
+          scene3DOnly:true,
+
+          //shadows:true //阴影
+          //terrainProviderViewModels: terrainModels,
+          //selectedTerrainProviderViewModel: terrainModels[1]  // Select STK high-res terrain
+      });
+
+    var modelEntityClippingPlanes;
+    var steps = 5; // 切割多边形（4为正方形，3为三角形）
+    var x = 0; // 相对于模型中点的偏移距离
+    var y =200; // 偏移距离
+    var tileset = null;
+    loadTileset(10);
+
+    // 加载模型
+    function loadTileset(height) {
+
+
+      // tileset = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({
+      //   url: "http://localhost:90/dayanta/tileset.json",
+      //   //clippingPlanes: modelEntityClippingPlanes
+      // }));
+        tileset = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({
+            url: 'DATA/ZDF/Production_cesium_all.json',
+        }));
+
+        // tileset1 = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({
+        //     url: 'DATA/SBY/Scene/Production_1.json',
+        // }));
+
+
+      tileset.readyPromise.then(function () {
+        // 修改模型高度
+        var boundingSphere = tileset.boundingSphere;
+        var cartographic = Cesium.Cartographic.fromCartesian(boundingSphere.center);
+        var surface = Cesium.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, 0.0);
+        var offset = Cesium.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, height);
+        var translation = Cesium.Cartesian3.subtract(offset, surface, new Cesium.Cartesian3());
+        tileset.modelMatrix = Cesium.Matrix4.fromTranslation(translation);
+        // 定位模型
+        var radius = boundingSphere.radius;
+        viewer.zoomTo(tileset, new Cesium.HeadingPitchRange(0, -Cesium.Math.toRadians(90), radius * 4.0));
+
+        test();
+      });
+
+    }
+
+    function test() {
+      // 设置中心点的偏移
+      var modelMatrix = Cesium.Matrix4.fromTranslation(new Cesium.Cartesian3(x, y));
+      createClippingPlanes(modelMatrix);
+      tileset.clippingPlanes = modelEntityClippingPlanes;
+    }
+
+    // 创建裁剪平面集合
+    function createClippingPlanes(modelMatrix) {
+      modelEntityClippingPlanes = new Cesium.ClippingPlaneCollection({
+        modelMatrix: modelMatrix,
+        edgeWidth: 2.0,
+        edgeColor: Cesium.Color.WHITE
+      });
+      computePlanes();
+    }
+
+    function computePlanes() {
+       var stepDegrees = Cesium.Math.TWO_PI / steps; // 多边形每条边的角度
+      // 计算多条边的平面
+      for (var i = 0; i < steps; i++) {
+        var angle = i * stepDegrees;
+        var dir = new Cesium.Cartesian3();
+        dir.x = 1.0;
+        dir.y = Math.tan(angle);
+        if (angle > Cesium.Math.PI_OVER_TWO) {   // Cesium.Math.PI_OVER_TWO == pi/2; 90
+          dir.x = -1.0;
+          dir.y *= -1.0;
+        }
+        if (angle > Cesium.Math.PI) {  //180
+          dir.x = -1.0;
+        }
+        if (angle > (Cesium.Math.PI_OVER_TWO * 3)) {  //Cesium.Math.PI_OVER_TWO == pi/ ,270
+          dir.x = 1.0;
+          dir.y = -dir.y;
+        }
+        Cesium.Cartesian3.normalize(dir, dir);
+        var newPlane = new Cesium.ClippingPlane(dir, -100); // 距离自定义 形成任意多边形
+        modelEntityClippingPlanes.add(newPlane);
+      }
+      // modelEntityClippingPlanes.add(new Cesium.ClippingPlane(new Cesium.Cartesian3(1, 0, 0), -30));
+      // modelEntityClippingPlanes.add(new Cesium.ClippingPlane(new Cesium.Cartesian3(0, 1, 0), -30));
+      // modelEntityClippingPlanes.add(new Cesium.ClippingPlane(new Cesium.Cartesian3(-1, 0, 0), -30));
+      // modelEntityClippingPlanes.add(new Cesium.ClippingPlane(new Cesium.Cartesian3(0, -1, 0), -30));
+    }
+  </script>
+</body>
+
+</html>

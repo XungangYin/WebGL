@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>threejs-3 </title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<style>body { margin: 0px; overflow: hidden; }</style>
+<link type="text/css" rel="stylesheet" href="stylesheet/3dhop.css"/> <!--链接样式表sst的通用方式 -->
+
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.js"></script>-->
+<script src="../js/three.js"></script>
+
+<script src="../js/libs/CanvasRenderer.js"></script>
+<!--JQUERY-->
+<script src="js/jquery.js"></script>
+<script src="js/TrackballControls.js"></script>
+<script src="js/nexus.js"></script>
+<script src="js/nexus_three.js"></script>
+<script src = "../js/libs/stats.min.js"></script>
+<script src = "../js/libs/dat.gui.min.js"></script>
+
+<script src="../js/libs/inflate.min.js"></script>
+<script src="../js/loaders/TGALoader_dev.js"></script>
+<script src="../js/loaders/FBXLoader.js"></script>
+
+<script src = "js/init.js"></script>
+
+
+</head>
+
+<body>
+<!--显示loading图标的方法-->
+<script type="text/javascript">
+    function loading() {
+        showMask();
+        letDivCenter();
+    }
+
+    function cancelloading() {
+        $("#loading").hide();
+        $("#mask").hide();
+    }
+
+    function showMask() {
+        $("#mask").css("height", "100%");
+        $("#mask").css("width", "100%");
+        $("#mask").show();
+    }
+
+    //让指定的DIV始终显示在屏幕正中间
+    function letDivCenter() {
+        var top = ($(window).height() - $("#loading").height()) / 2;
+        var left = ($(window).width() - $("#loading").width()) / 2;
+        var scrollTop = $(document).scrollTop();
+        var scrollLeft = $(document).scrollLeft();
+        $("#loading").css({position: 'absolute', 'top': top + scrollTop, left: left + scrollLeft}).show();
+    }
+</script>
+
+<!--loading图标样式-->
+<style>
+    svg {
+        position: relative;
+        width: 125px;
+        height: 125px;
+        margin: 25px;
+        z-index: 2000;
+        display: inline-block;
+    }
+    .mask {
+        position: absolute;
+        top: 0px;
+        filter: alpha(opacity=60);
+        background-color: #777;
+        z-index: 1002;
+        left: 0px;
+        opacity: 0.5;
+        -moz-opacity: 0.5;
+    }
+</style>
+
+<!--loading图标-->
+<div id="mask" class="mask"></div>
+<div id="loading" hidden="hidden">
+    <svg version="1.1" id="L9" xmlns="http://www.w3.org/2000/svg" x="0px"
+             y="0px"
+             viewBox="0 0 100 100" enable-background="new 0 0 0 0" xml:space="preserve">
+            <path fill="#1E90FF"
+                  d="M73,50c0-12.7-10.3-23-23-23S27,37.3,27,50 M30.9,50c0-10.5,8.5-19.1,19.1-19.1S69.1,39.5,69.1,50">
+                <animateTransform attributeName="transform" attributeType="XML"
+                                  type="rotate"
+                                  dur="1s"
+                                  from="0 50 50"
+                                  to="360 50 50"
+                                  repeatCount="indefinite"/>
+            </path>
+        </svg>
+</div>
+
+
+<div id="container"></div>
+<!--<canvas id="container"></canvas>-->
+<div id="event" class ="3DModel" onmousedown="if(event.preventDefault) event.preventDefault() "></div>
+<div id="toolbar">
+    <img id="home" 		 	title="Home" 					src="img/dark/home.png"/><br/>
+    <img id="zoomin" 	    title="Active action"					src="img/dark/zoomin.png"/><br/>
+    <img id="light_on"      title="Disable Light Control"   src="img/dark/lightcontrol_on.png" style="position:absolute; visibility:hidden;"/>
+    <img id="light"      	title="Enable Light Control"    src="img/dark/lightcontrol.png"    /><br/>
+    <img id="measure_on"	title="Disable Measure tool"	src="img/dark/measure_on.png" style="..."/>
+    <img id="measure"		title="Enable Measure tool"		src="img/dark/measure.png"/><br/>
+
+</div>
+
+<div id="measure-box" class="output-box">Measured length<hr/><span id="measure-output" class="output-text" onmousedown="event.stopPropagation()">0.0</span></div>
+
+<div id = "stats" align="right" style="margin-top: 0px;"></div>
+
+</body>
+
+<script src = "project1.js"></script>
+
+<script>
+    loading();
+    //document.addEventListener("mousedown",onDocumentMouseDown,false); //关闭对html事件的相应
+    document.addEventListener("touchstart",onDocumentTouchStart,false);
+    window.addEventListener( 'resize', onWindowResize, false );
+    init3D();
+    initRender();
+    initCameraAndControl();
+    initScene();
+    animate();
+//   $('#measure-output').html(measure.toFixed(2) + " mm");
+    cancelloading();
+</script>
+
+</html>
+

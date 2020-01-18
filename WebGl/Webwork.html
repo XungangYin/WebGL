@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>Learn WebWork</title>
+</head>
+<br>
+<p> 计数: <output id = "result" ></output> </p>
+<button onclick="startWorkers()">开始</button>
+<button onclick="stopWorkers()">结束</button>
+<br /> <br />
+
+<script>
+    var w;
+    function startWorkers() {
+        if(typeof(Worker)!=="undefined"){
+            if (typeof (w) == "undefined"){
+                w = new Worker("js/demo_workers.js");
+            }
+
+            w.onmessage = function (event) {  // 用于接收Worker文件传递的消息,获取的是postMessage传递来的
+                document.getElementById("result").innerHTML = event.data;
+            }
+        }
+        else {
+            document.getElementById("result").innerHTML="sorry, your browser does not support Web workers..";
+        }
+    }
+
+    function stopWorkers() {
+        w.terminate();
+    }
+
+</script>
+
+</body>
+</html>

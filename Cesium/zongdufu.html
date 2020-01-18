@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>总督府</title>
+
+    <script src="js/Build/Cesium/Cesium.js"></script>
+    <script src="Sandcastle/Sandcastle-header.js"></script>
+    <link href="js/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+
+
+</head>
+<body>
+
+<style>
+    @import url(Sandcastle/templates/bucket.css);
+
+    #viewChanged, #cameraChanged {
+        display: none;
+        background-color: red;
+        color: white;
+    }
+</style>
+<div id="cesiumContainer" class="fullSize" style="width: 100%;height: 100%"></div>
+<div id="loadingOverlay"><h1>Loading...</h1></div>
+<div id="toolbar"></div>
+
+<script>
+    Cesium.Ion.defaultAccessToken="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIzMTc3NjhkOC0xYmExLTQwOTYtYTYwZS05YzQ4YzNhZWVhM2QiLCJpZCI6NTkwNywic2NvcGVzIjpbImFzciIsImdjIl0sImlhdCI6MTU0NDU5NTA4Nn0.-4tFtV4jM36IJTT7s8S1VrioG-hZSA9Wf9eKtR-kS7k";
+
+    //构造地形源的默认列表
+    var terrainModels = Cesium.createDefaultTerrainProviderViewModels();
+    var viewer = new Cesium.Viewer('cesiumContainer', {
+        terrainProvider : Cesium.createWorldTerrain(),
+        baseLayerPicker:true, //显示图层选择
+        timeline:true,
+        animation:true,
+        vrButton:true,
+        sceneModePicker:true,
+        infoBox:true,   //显示点击要素之后的显示信息
+        scene3DOnly:true,
+        terrainProviderViewModels: terrainModels,
+        selectedTerrainProviderViewModel: terrainModels[1]  // Select STK high-res terrain
+    });
+    viewer._cesiumWidget._creditContainer.style.display="none";  //隐藏版权显示
+   // viewer.extend(Cesium.viewerCesiumInspectorMixin);  //cesium小工具
+    viewer.scene.globe.depthTestAgainstTerrain = true;  //控制视角不能转到地下
+
+    viewer.extend(Cesium.viewerCesium3DTilesInspectorMixin);
+    //var inspectorViewModel = viewer.cesium3DTilesInspector.viewModel;
+
+
+
+    var boundingSphere = new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(120.3190255, 36.06310826, 47.99759057), 363.544424);
+    // Override behavior of home button
+    viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(commandInfo) {
+        // Fly to custom position
+        viewer.camera.flyToBoundingSphere(boundingSphere);
+
+        // Tell the home button not to do anything
+        commandInfo.cancel = true;
+    });
+    viewer.camera.flyToBoundingSphere(boundingSphere, {duration: 0});
+
+    //检测是否是在手机端
+    var isMobile = {
+        Android: function() {
+            return navigator.userAgent.match(/Android/i);
+        },
+        BlackBerry: function() {
+            return navigator.userAgent.match(/BlackBerry/i);
+        },
+        iOS: function() {
+            return navigator.userAgent.match(/iPhone|iPad|iPod/i);
+        },
+        Opera: function() {
+            return navigator.userAgent.match(/Opera Mini/i);
+        },
+        Windows: function() {
+            return navigator.userAgent.match(/IEMobile/i);
+        },
+        any: function() {
+            return (isMobile.Android() || isMobile.BlackBerry() || isMobile.iOS() || isMobile.Opera() || isMobile.Windows());
+        }
+    };
+
+    //调整高度
+    function adjustHeight() {
+        var cartographic = Cesium.Cartographic.fromCartesian(boundingSphere.center);  //笛卡尔转化为经纬高度(单位为弧度)
+        var surface = Cesium.Cartesian3.fromRadians(cartographic.longitude,cartographic.latitude,0.0);  //弧度转为笛卡尔
+        var offset = Cesium.Cartesian3.fromRadians(cartographic.longitude,cartographic.latitude,20);  //距离地面10米
+        var translation = Cesium.Cartesian3.subtract(offset,surface,new Cesium.Cartesian3());  //计算两组坐标的差异，结果存贮在参数3中
+        var modelMatrix = Cesium.Matrix4.fromTranslation(translation);
+
+
+        //旋转北航研究院
+        // var position = Cesium.Cartesian3.fromDegrees(120.3190255, 36.06310826, 47.99759057);
+        // var mat = Cesium.Transforms.eastNorthUpToFixedFrame(position);
+        // var rotationX = Cesium.Matrix4.fromRotationTranslation(Cesium.Matrix3.fromRotationX(Cesium.Math.toRadians(90)));
+        //Cesium.Matrix4.multiply(mat, rotationX, mat);
+        return modelMatrix;
+    }
+
+    var tileset = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({
+        url: 'ZDF/Production_cesium_all.json',
+      //  silhouetteColor : Cesium.Color.fromAlpha(Cesium.Color.GREEN, parseFloat(10.5)),//轮廓线
+        modelMatrix: adjustHeight(),
+        maximumScreenSpaceError : isMobile.any() ? 8 : 1, // Temporary workaround for low memory mobile devices - Increase maximum error to 8.
+        maximumNumberOfLoadedTiles : isMobile.any() ? 10 : 15000 // Temporary workaround for low memory mobile devices - Decrease (disable) tile cache.
+    }));
+
+
+
+    var planePosition = Cesium.Cartesian3.fromDegrees(120.3190255, 36.06310826, 47.99759057);
+    var particlesOffset = new Cesium.Cartesian3(120.3190255, 36.06310826, 147.99759057);
+
+
+
+    // creating particles model matrix
+    var translationOffset = Cesium.Matrix4.fromTranslation(particlesOffset, new Cesium.Matrix4());
+    var translationOfPlane = Cesium.Matrix4.fromTranslation(planePosition, new Cesium.Matrix4());
+    var particlesModelMatrix = Cesium.Matrix4.multiplyTransformation(translationOfPlane, translationOffset, new Cesium.Matrix4());
+
+    //粒子系统
+    var particleSystem = viewer.scene.primitives.add(new Cesium.ParticleSystem({
+        image: "./img/fire.png",
+        width:200,
+        height:200,
+        startScale:10.0,
+        endScale:40.0,
+        life:10.0,
+        speed:50.0,
+        emitter:new Cesium.CircleEmitter(1.0),
+        rate:50.0,
+        //emitterModelMatrix:matri1x,   //在例子系统局部坐标中变换粒子系统发射器
+        modelMatrix:particlesModelMatrix,
+        lifetime:160.0
+    }));
+
+    // var entity = viewer.entities.add({
+    //     name:"gltf动画",
+    //     position: Cesium.Cartesian3.fromDegrees(120.3190255, 36.06310826, 47.99759057),
+    //     model: {
+    //         uri:"SampleData/gltf/boy_action_jpg_out/boy_action_jpg.gltf"
+    //     }
+    // });
+
+    viewer.zoomTo(particleSystem);
+
+
+    function addBillboard() {
+        Sandcastle.declare(addBillboard);
+
+        viewer.entities.add({
+            position : Cesium.Cartesian3.fromDegrees(120.3190255, 36.06310826, 47.99759057),
+            billboard :{
+                image : './img/biaoqian.png'
+            }
+        });
+    }
+
+    //左边边添加工具按钮
+    Sandcastle.addToolbarMenu([
+        {
+            text:'Function'
+        },
+        {
+            text:'add billboard',
+            onselect:function () {
+                addBillboard();
+                Sandcastle.highlight(addBillboard);
+            }
+        }
+    ]);
+
+
+
+    var handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+    handler.setInputAction(
+        function (movement) {
+            // var pick = viewer.scene.pick(movement.position);
+            var pick = viewer.scene.pickPosition(movement.position);
+            // if (Cesium.defined(pick) && Cesium.defined(pick.node) && Cesium.defined(pick.mesh)) {
+            if (Cesium.defined(pick)) {
+                //console.log(pick);
+                var position = pick; //获取鼠标点击和模型几点的位置
+             //   console.log(position);
+                var entity = viewer.entities.add({
+                    name:"gltf动画",
+                    position:position,
+                    model: {
+                        uri:"SampleData/gltf/boy_action_jpg_out/boy_action_jpg.gltf"
+                    }
+                });
+
+            }
+        },
+        Cesium.ScreenSpaceEventType.LEFT_CLICK
+    );
+
+
+</script>
+</body>
+</html>

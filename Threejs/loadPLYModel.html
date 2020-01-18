@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>loadPLYModel</title>
+    <style>
+        body{
+            font-family:Monospace;
+            background-color: red;
+            margin: 0px;
+            overflow: hidden;
+        }
+        #info {
+            color: #fff;
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display: block;
+        }
+
+        a {color:skyblue}
+        .button {
+            background: #999;
+            color: #eee;
+            padding: 0.2em 0.5em;
+            cursor: pointer}
+        .highlight{background: orange;
+            color: #fff;}
+        span{
+            display: inline-block;
+            width: 60px;float: left;text-align: center;}
+
+    </style>
+
+</head>
+<body>
+    <div id = "info">
+    这是div信息
+    </div>
+    <script src = "js/three.js"></script>
+    <script src = "js/loaders/PLYLoader.js"></script>
+    <script src = "js/Detector.js"></script>
+    <script src = "js/libs/stats.min.js"></script>
+    <script src = "js/controls/OrbitControls.js"></script>
+    <script src = "js/controls/TrackballControls.js"></script>
+    <script>
+        if(!Detector.webgl) Detector.addGetWebGLMessage();
+        var container, stats;
+        var camera,cameraTarget,scene,renderer;
+        var controls;
+        init();
+        animate();
+
+        function init() {
+            container = document.createElement('div');
+            document.body.appendChild(container);
+
+            camera = new THREE.PerspectiveCamera(45,window.innerWidth/window.innerHeight,1,1500 );
+            camera.position.set(0,-50,-150);
+           // camera.position.y = 30;
+          /*  camera.up.x = 0;
+            camera.up.y =1;
+            camera.up.z = 0;
+            camera.lookAt({
+                x:0,y:0,z:0
+            });*/
+
+            cameraTarget = new THREE.Vector3(0,0,0);
+            camera.lookAt(cameraTarget);
+
+           controls = new THREE.TrackballControls(camera); //轨迹球漫游器
+            //旋转速度
+            controls.rotateSpeed = 1.3;
+            //变焦速度
+            controls.zoomSpeed = 1.2;
+            //平移速度
+            controls.panSpeed = 0.8;
+            //是否不变焦
+            controls.noZoom = false;
+            //是否不平移
+            controls.noPan = false;
+            //可能是惯性 true没有惯性
+            controls.staticMoving = false;
+            //动态阻尼系数 就是灵敏度
+            controls.dynamicDampingFactor = 0.3;
+          //  controls.keys = [ 65, 83, 68 ];
+
+           /* controls = new THREE.OrbitControls( camera );  //漫游器
+            controls.rotateSpeed = 1.0; //左键速度
+            controls.zoomSpeed = 1.2; //中建
+            controls.panSpeed = 1.8; //右键
+
+            controls.keys = [ 61, 83, 68 ];*/
+            scene = new THREE.Scene();
+           scene.background = new THREE.Color(0xFFFFFF); // 场景颜色
+           // scene.fog  = new THREE.Fog(0xF00F0,2,5);  //雾气影响模型颜色
+
+         //texture
+            var manager = new THREE.LoadingManager();
+            manager.onProgress = function (item, loaded, total) {
+                console.log(item,loaded,total);
+            };
+            var textureLoader = new THREE.TextureLoader(manager);
+            var texture = textureLoader.load("models/ply/binary/PLY_PNG/sene_texture.png");
+
+            var onProgress = function (xhr) {
+                if (xhr.lengthComputable) {
+                    var percentComplete = xhr.loaded / xhr.total * 100;
+                    console.log( Math.round(percentComplete, 2) + '% downloaded');
+                }
+            };
+            var onError = function (xhr) {
+
+            };
+
+            var loader  = new THREE.PLYLoader(manager);
+            loader.load("./models/ply/binary/PLY_PNG/sene_texture.ply",function (object) {
+               /* object.traverse(function (child) { //遍历读入模型的每一个mesh到child
+                    if (child instanceof THREE.Mesh) {  //判断child是否是mesh类型.instanceof类似与typeof,返回准确的数据类型
+                        child.material.map = texture;
+                    }
+                });*/
+              //  object.position.y  =0;
+                scene.add(object);
+            },onProgress,onError);
+
+
+             /*   var geometry = new THREE.Geometry();
+                //PLY load
+                var loader = new THREE.PLYLoader();
+                //青岛模型
+                //loader.load('./models/ply/binary/scene_dense_mesh_refine_texture.ply',function (geometry) {
+                //天津
+                loader.load('./models/ply/binary/PLY_PNG/sene_texture.ply', function (geometry) {
+                    geometry.computeVertexNormals();
+                    var material = new THREE.MeshStandardMaterial({color: 0xFF0000, flatShading: true});
+                    var mesh = new THREE.Mesh(geometry, material);
+                    //  mesh.position.y = 5;   //这是对模型进行平移
+                    // mesh.position.z = 0;
+                    //mesh.position.x = -Math.PI/2;
+                    // mesh.scale.multiplyScalar(40);  //对模型进行缩放
+                    //mesh.castShadow = true;
+                    // mesh.receiveShadow = true;
+
+                    scene.add(mesh);
+                });
+*/
+            var light;
+            light = new THREE.AmbientLight("#0f0f0f",0.6);
+            scene.add(light);
+
+            renderer = new THREE.WebGLRenderer({antialias:true});
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth,window.innerHeight);
+
+            renderer.gammaInput = true;
+            renderer.gammaOutput = true;
+          //  renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            //stats;
+            stats = new Stats();
+           // container.appendChild(stats.dom);
+           container.appendChild( stats.dom );
+            //resize
+            window.addEventListener('resize',onWindowResize,false);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth,window.innerHeight);
+        }
+
+        function animate() {
+            controls.update();
+            requestAnimationFrame(animate);
+            render();
+            stats.update();
+        }
+
+        function render() {
+            var time = Date.now()*0.0005;
+          /*  camera.position.x = 8*Math.sin(time); //绕着z轴旋转，半径为8
+            camera.position.z = 8*Math.cos(time);*/
+          /* temp += 0.1;
+           camera.position.x =temp;
+           //camera.lookAt({ x:0,y:temp,z:0})
+            cameraTarget.x = temp;
+            camera.lookAt(cameraTarget);*/
+
+            renderer.render(scene,camera);
+        }
+
+    /*    function resizeCamer() {
+            camera.position.set(0,0,8);
+            camera.lookAt(cameraTarget);
+        }*/
+
+    </script>
+
+   <!-- <button type="button" onclick="resizeCamer()" width = "120px" height = "120px">相机视点恢复</button>-->
+</body>
+</html>

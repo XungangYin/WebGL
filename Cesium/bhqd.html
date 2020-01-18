@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>北航青岛研究院</title>
+
+    <script src="js/Build/Cesium/Cesium.js"></script>
+    <script src="Sandcastle/Sandcastle-header.js"></script>
+    <!--导航插件-->
+    <script src="js/libs/viewerCesiumNavigationMixin.min.js"></script>
+
+    <script src = "js/jquery.min.js"></script>
+    <script src = "js/layer/layer.js"></script>
+    <!--可视域分析相关-->
+
+    <!--<script src="js/libs/Tools-36EllipseGeometryLibraryEx.js"></script>-->
+    <!--<script src="js/libs/Tools-36MathTools.js"></script>-->
+    <!--<script src="js/libs/Tools-36TerrainToolCopy.js"></script>-->
+    <!--<script src="js/libs/Tools-36PrimitivePoints.js"></script>-->
+
+    <link href="js/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+
+
+</head>
+<body>
+<style>
+    @import url(Sandcastle/templates/bucket.css);
+    .demo-container {
+        background-color: #303336;
+        border-radius: 5px;
+        padding: 5px;
+        margin: 5px 3px;
+    }
+    .demo-container input {
+        vertical-align: middle;
+        margin-top: 0;
+    }
+
+    #viewChanged, #cameraChanged {
+        display: none;
+        background-color: red;
+        color: white;
+    }
+</style>
+<div id="cesiumContainer" class="fullSize" style="width: 100%;height: 100%"></div>
+<div id="loadingOverlay"><h1>Loading...</h1></div>
+<div id="toolbar">
+    <div id="zoomButtons"></div>
+
+
+    <!--<td>-->
+        <!--高度 <input type="range" min="0" max="500" step="2" data-bind="value: hueShift, valueUpdate: 'input'">-->
+        <!--&lt;!&ndash;<input type="text" size="5" data-bind="value: hueShift">&ndash;&gt;-->
+    <!--</td>-->
+
+    <div class="demo-container">
+        <label><input type="radio" name="shadingMaterials" value="none" data-bind="checked: selectedShading"> GLSL</label>
+        <label><input type="radio" name="shadingMaterials" value="elevation" data-bind="checked: selectedShading"> 高程</label>
+        <label><input type="radio" name="shadingMaterials" value="slope" data-bind="checked: selectedShading"> 坡度</label>
+        <!--<label><input type="radio" name="shadingMaterials" value="aspect" data-bind="checked: selectedShading"> 坡向</label>-->
+    </div>
+    <div class="demo-container">
+        <div>
+            <label><input type="checkbox" data-bind="checked: enableContour">绘制等高线</label>
+            <!--<label><input type="checkbox" data-bind="checked: enableContour">土石方分析</label>-->
+        </div>
+        <div>
+            梯度 <input style="width: 136px" type="range" min="1.0" max="100.0" step="1.0" data-bind="value: contourSpacing, valueUpdate: 'input', enable: enableContour"> <span data-bind="text: contourSpacing"></span>m
+        </div>
+        <!--<div>-->
+            <!--线宽 <input style="width: 125px" type="range" min="1.0" max="10.0" step="1.0" data-bind="value: contourWidth, valueUpdate: 'input', enable: enableContour"> <span data-bind="text: contourWidth"></span>px-->
+        <!--</div>-->
+        <div>
+            <button type="button" data-bind="click: changeColor, enable: enableContour">改变等高线颜色</button>
+        </div>
+        <div>
+            <!--线宽 <input style="width: 125px" type="range" min="1.0" max="10.0" step="1.0" data-bind="value: contourWidth, valueUpdate: 'input', enable: enableContour"> <span data-bind="text: contourWidth"></span>px-->
+
+            <label>  高度 <input type="range" min="0" max="1000" step="2" data-bind="value: height, valueUpdate: 'input'"><span deta-bind="value:height"></span>
+                  <input type="text" size="5" data-bind="value: height"> </label>
+        </div>
+    </div>
+</div>
+
+<div id="toolTip" style="display:none;position:absolute;height:20px;width:120px;background: #4c4c4d;top:0px;left:0px"></div>
+<div id="toolTip1" style="display:none;position:absolute;height:20px;width:120px;background: #4c4c4d;top:0px;left:0px"></div>
+
+<script>
+    Cesium.Ion.defaultAccessToken="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIzMTc3NjhkOC0xYmExLTQwOTYtYTYwZS05YzQ4YzNhZWVhM2QiLCJpZCI6NTkwNywic2NvcGVzIjpbImFzciIsImdjIl0sImlhdCI6MTU0NDU5NTA4Nn0.-4tFtV4jM36IJTT7s8S1VrioG-hZSA9Wf9eKtR-kS7k";
+
+    var czml = [
+        {
+            "id":"document",
+            "version":"1.0"
+        },
+        {
+            "id":"消防车",
+            "availability":"2012-08-04T16:00:00Z/2012-08-04T16:04:54.9962195740191Z",
+            "label":{
+                "fillColor":[
+                    {
+                        "interval":"2012-08-04T16:00:00Z/2012-08-04T18:00:00Z",
+                        "rgba":[
+                            255,255,0,255
+                        ]
+                    }
+                ],
+                "font":"bold 10pt Segoe UI Semibold",
+               // "horizontalOrigin":"CENTER",
+                "outlineColor":{
+                    "rgba":[
+                        0,0,0,255
+                    ]
+                },
+                "pixelOffset":{
+                    "cartesian2":[
+                        0.0,20.0
+                    ]
+                },
+                "scale":1.0,
+                "show":[
+                    {
+                        "interval":"2012-08-04T16:00:00Z/2012-08-04T18:00:00Z",  //定义时间间隔
+                        "boolean":true
+                    }
+                ],
+               // "style":"FILL",
+               // "verticalOrigin":"CENTER"
+            },
+            "model":{
+                "gltf":"SampleData/fire/xiaofangqicai/FireCar/Firetruck_JP18.gltf",
+                // "minimumPixelSize":100,
+                 "maximumScale":2   //最大缩放倍数
+            },
+            "orientation" : {          //这可以控制实时改变方向，使得行走方向和路线方向一致
+                "velocityReference": "#position"
+            },
+            "viewFrom": {
+                "cartesian": [ -2080, -1715, 779 ]
+            },
+            "properties" : {
+                "fuel_remaining" : {
+                    "epoch":"2012-08-04T16:00:00Z",
+                    "number": [
+                        0, 22.5,
+                        1500, 21.2
+                    ]
+                }
+            },
+            "path":{
+                "material":{
+                    "solidColor":{
+                        "color":{
+                            "interval":"2012-08-04T16:00:00Z/2012-08-04T18:00:00Z",
+                            "rgba":[
+                                255,255,0,255
+                            ]
+                        }
+                    }
+                },
+                "width":[
+                    {
+                        "interval":"2012-08-04T16:00:00Z/2012-08-04T18:00:00Z",
+                        "number":5.0
+                    }
+                ],
+                "show":[
+                    {
+                        "interval":"2012-08-04T16:00:00Z/2012-08-04T18:00:00Z",
+                        "boolean":true
+                    }
+                ]
+            },
+            "position":{
+                "interpolationAlgorithm":"LAGRANGE",  //插值算法，此处为线性插值
+                "interpolationDegree":1,            //插值算法的次数
+                "epoch":"2012-08-04T16:00:00Z",  //epoch：表示时间的方法
+                "cartographicDegrees":[
+                    0,120.31681149588947,36.06409520677735,40.72081407529729,
+                    10,120.31693280055144,36.064047215823926,41.3700960754782,
+                    20,120.3171411463128,36.06399006107798,42.58599766259917,
+                    30,120.31748799695052,36.06390740836271,44.84169003881721,
+                    40,120.31777406454765,36.06385689428787,46.61846467051051,
+                    50,120.3180525742223,36.06380132564934,48.38284493429874,
+                    60,120.31853944670036,36.063708656569084,51.28828248498913,
+                    70,120.3187428702371,36.06370827801603,52.38373045885928,
+                    80,120.31879046743109,36.06381213840397,53.25003755782413,
+                    90,120.31887171298982,36.06414643281027,56.14875043726292,
+                    100,120.3192286434945,36.06426123575461,57.71087243422107
+                ]
+            }
+        }
+    ];
+
+    var terrainModels = Cesium.createDefaultTerrainProviderViewModels();
+    var terrainProvider = Cesium.createWorldTerrain({
+        requestVertexNormals: true //Needed to visualize slope
+    });
+    var viewer = new Cesium.Viewer('cesiumContainer', {
+        shouldAnimate:true,
+        terrainProvider : terrainProvider,
+        baseLayerPicker:true, //显示图层选择
+        timeline:true,
+        animation:true,
+        vrButton:true,
+        sceneModePicker:true,
+        infoBox:true,   //显示点击要素之后的显示信息
+        scene3DOnly:true,
+        //shadows:true //阴影
+        //terrainProviderViewModels: terrainModels,
+        //selectedTerrainProviderViewModel: terrainModels[1]  // Select STK high-res terrain
+    });
+    viewer.scene.globe.enableLighting = true;
+    viewer._cesiumWidget._creditContainer.style.display="none";  //隐藏版权显示
+    //viewer.extend(Cesium.viewerCesiumInspectorMixin);  //cesium小工具
+    viewer.scene.globe.depthTestAgainstTerrain = true;  //控制视角不能转到地下
+    var options = {};
+    options.defaultResetView = Cesium.Rectangle.fromDegrees(0, 0.0, 0.0, 10);  //默认2D范围
+    // Only the compass will show on the map
+    options.enableCompass= true;            //罗盘
+    options.enableZoomControls= false;      //缩放
+    options.enableDistanceLegend= false;     //比例尺
+    options.enableCompassOuterRing= true;   //指南针外环
+    viewer.extend(Cesium.viewerCesiumNavigationMixin, options);
+
+
+    viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK); //取消双击追踪效果
+    var boundingSphere = new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(120.506967, 36.18869936, 37.81288381), 566.9475637);  //北航青岛
+    var boundingSphere1 = new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(120.3190255, 36.06310826, 47.99759057), 363.544424); //总督府
+    // Override behavior of home button
+
+    // viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(commandInfo) {
+    //     // Fly to custom position
+    //     viewer.camera.flyToBoundingSphere(boundingSphere);
+    //
+    //     // Tell the home button not to do anything
+    //     commandInfo.cancel = true;
+    // });
+     viewer.camera.flyToBoundingSphere(boundingSphere1, {duration: 0});
+
+    //调整高度
+    function adjustHeight(center,height) {
+        // var cartographic = Cesium.Cartographic.fromCartesian(boundingSphere.center);  //笛卡尔转化为经纬高度(单位为弧度)(地理坐标系下的弧度表示)
+        var cartographic = Cesium.Cartographic.fromCartesian(center);
+        var surface = Cesium.Cartesian3.fromRadians(cartographic.longitude,cartographic.latitude,0.0);  //弧度转为笛卡尔
+        var offset = Cesium.Cartesian3.fromRadians(cartographic.longitude,cartographic.latitude,height);  //距离地面10米
+        var translation = Cesium.Cartesian3.subtract(offset,surface,new Cesium.Cartesian3());  //计算两组坐标的差异，结果存贮在参数3中
+        var modelMatrix = Cesium.Matrix4.fromTranslation(translation);
+       //  var modelMatrix = Cesium.Matrix4.fromRotationTranslation(Cesium.Matrix3.fromRotationX(Cesium.Math.toRadians(0.01)),translation);
+
+        return modelMatrix;
+    }
+
+    //检测是否是在手机端
+    var isMobile = {
+        Android: function() {
+            return navigator.userAgent.match(/Android/i);
+        },
+        BlackBerry: function() {
+            return navigator.userAgent.match(/BlackBerry/i);
+        },
+        iOS: function() {
+            return navigator.userAgent.match(/iPhone|iPad|iPod/i);
+        },
+        Opera: function() {
+            return navigator.userAgent.match(/Opera Mini/i);
+        },
+        Windows: function() {
+            return navigator.userAgent.match(/IEMobile/i);
+        },
+        any: function() {
+            return (isMobile.Android() || isMobile.BlackBerry() || isMobile.iOS() || isMobile.Opera() || isMobile.Windows());
+        }
+    };
+
+    //北航青岛
+    var tileset1 = new Cesium.Cesium3DTileset({
+        name:"BH",
+        url: 'DATA/YJY/Scene/Production_1.json',
+        //  silhouetteColor : Cesium.Color.fromAlpha(Cesium.Color.GREEN, parseFloat(10.5)),//轮廓线
+        modelMatrix: adjustHeight(boundingSphere.center,100),
+       // modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(Cesium.Cartesian3.fromDegrees(120.3190255, 36.06310826, 147.99759057)),
+        maximumScreenSpaceError : isMobile.any() ? 8 : 1, // Temporary workaround for low memory mobile devices - Increase maximum error to 8.
+        maximumNumberOfLoadedTiles : isMobile.any() ? 10 : 5000 // Temporary workaround for low memory mobile devices - Decrease (disable) tile cache.
+    });
+
+    viewer.scene.primitives.add(tileset1);
+
+
+    //
+    // viewer.camera.flyTo(tileset111);
+
+    //总督府
+    var tileset2 = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({
+        url: 'DATA/ZDF/Production_cesium_all.json',
+        //  silhouetteColor : Cesium.Color.fromAlpha(Cesium.Color.GREEN, parseFloat(10.5)),//轮廓线
+        modelMatrix: adjustHeight(this.boundingSphere.center,20),
+        maximumScreenSpaceError : isMobile.any() ? 8 : 1, // Temporary workaround for low memory mobile devices - Increase maximum error to 8.
+        maximumNumberOfLoadedTiles : isMobile.any() ? 10 : 5000 // Temporary workaround for low memory mobile devices - Decrease (disable) tile cache.
+    }));
+
+    //裁切平面，必须依附于对象
+    let clippingPlanes = new Cesium.ClippingPlaneCollection({
+        planes: [
+            new Cesium.ClippingPlane(new Cesium.Cartesian3(1.0, 0.0, -0.1), 0.0)  //平面的法向和距离模型中心的距离
+        ],
+        unionClippingRegions: true,
+        edgeColor: Cesium.Color.RED,
+        edgeWidth: 1
+    })
+
+    //大教堂
+    var tileset3 = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({
+        url: './DATA/DJTNan/Production_1/Scene/Production_1.json',
+        //  silhouetteColor : Cesium.Color.fromAlpha(Cesium.Color.GREEN, parseFloat(10.5)),//轮廓线
+        modelMatrix: adjustHeight(this.boundingSphere.center,-50),
+        maximumScreenSpaceError : isMobile.any() ? 8 : 1, // Temporary workaround for low memory mobile devices - Increase maximum error to 8.
+        maximumNumberOfLoadedTiles : isMobile.any() ? 10 : 5000, // Temporary workaround for low memory mobile devices - Decrease (disable) tile cache.
+      //  clippingPlanes: clippingPlanes//添加裁切
+    }));
+
+    //海洋大学
+    var tileset4 = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({
+        url: 'DATA/HD/Scene/Production_1.json',
+        //  silhouetteColor : Cesium.Color.fromAlpha(Cesium.Color.GREEN, parseFloat(10.5)),//轮廓线
+        modelMatrix: adjustHeight(this.boundingSphere.center,85),
+        maximumScreenSpaceError : isMobile.any() ? 8 : 1, // Temporary workaround for low memory mobile devices - Increase maximum error to 8.
+        maximumNumberOfLoadedTiles : isMobile.any() ? 10 : 5000 // Temporary workaround for low memory mobile devices - Decrease (disable) tile cache.
+    }));
+
+    //即墨古城
+    var tileset5 = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({
+        url: 'DATA/JMGC/Production_1.json',
+        //  silhouetteColor : Cesium.Color.fromAlpha(Cesium.Color.GREEN, parseFloat(10.5)),//轮廓线
+        modelMatrix: adjustHeight(this.boundingSphere.center,3),
+        maximumScreenSpaceError : isMobile.any() ? 8 : 1, // Temporary workaround for low memory mobile devices - Increase maximum error to 8.
+        maximumNumberOfLoadedTiles : isMobile.any() ? 10 : 5000 // Temporary workaround for low memory mobile devices - Decrease (disable) tile cache.
+    }));
+
+    //研究院周边
+    var tileset6 = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({
+        url: 'DATA/YJYBound/Scene/Production_3.json',
+        //  silhouetteColor : Cesium.Color.fromAlpha(Cesium.Color.GREEN, parseFloat(10.5)),//轮廓线
+        modelMatrix: adjustHeight(this.boundingSphere.center,3),
+        maximumScreenSpaceError : isMobile.any() ? 8 : 1, // Temporary workaround for low memory mobile devices - Increase maximum error to 8.
+        maximumNumberOfLoadedTiles : isMobile.any() ? 10 : 5000 // Temporary workaround for low memory mobile devices - Decrease (disable) tile cache.
+    }));
+
+    //天津理工大学
+    var tileset7 = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({
+        url: 'DATA/TJLG/Scene/Production_1.json',
+        //  silhouetteColor : Cesium.Color.fromAlpha(Cesium.Color.GREEN, parseFloat(10.5)),//轮廓线
+        modelMatrix: adjustHeight(this.boundingSphere.center,30),
+        maximumScreenSpaceError : isMobile.any() ? 8 : 1, // Temporary workaround for low memory mobile devices - Increase maximum error to 8.
+        maximumNumberOfLoadedTiles : isMobile.any() ? 10 : 5000 // Temporary workaround for low memory mobile devices - Decrease (disable) tile cache.
+    }));
+
+
+    var BHcontent = '<div id = "main" style="padding: 10px;color: #FFF;font-size: 10px;">'+
+       // '<div id = "main1" style="width:100%;height:100px;overflow:auto;">'+
+        '<table style="float:top;">'+
+        '<tr><td style="width:100px;">研究院简介:</td></tr> <tr><td style="text-indent:2em;">北京航空航天大学青岛研究院于2016年5月28日揭牌成立，由北京航空航天大学与青岛市人民政府、青岛市崂山区人民政府、歌尔集团四方共建，遵循科教融合、学科交叉、国际结合、' +
+        '校友协同的合作思路，充分发挥青岛的政策优势、产业优势、区位优势和北航的学科优势、科研优势、人才优势，以及歌尔集团的行业优势、研发优势、市场优势，开展高起点、多领域、全方位的交流与合作，逐步建立政产学研结合的创新体系，' +
+        '致力于打造高水平的科研创新基地和高质量的人才培养基地，促进成果转化，重点目标共同推动青岛市崂山区“虚拟现实产业之都”的重要战略目标和虚拟现实产业的创新发展，带动产业升级，共同构建协同创新发展的典范。</td></tr>'+
+        '</table>' ;
+    var ZDFcontent = '<div id = "main" style="padding: 10px;color: #FFF;font-size: 10px;">'+
+        // '<div id = "main1" style="width:100%;height:100px;overflow:auto;">'+
+        '<table style="float:top;">'+
+        '<tr><td style="width:100px;">总督府简介:</td></tr> <tr><td style="text-indent:2em;">青岛德国总督楼旧址博物馆）位于繁华商业区、风景区的中部。背山面海，雄伟壮观，它是一座欧式风格建筑精华的荟萃，始建于1905年，建成于1907年，是当时胶澳战区提督的官邸。\n' +
+        '建筑位于信号山半山腰上，地理位置优越，环境幽雅。建筑设计师为德国人拉查鲁维茨，建筑总监为施特拉塞尔，工程耗资为四十五万金马克。建筑面积四千余平方米，主体高三十余米。部分外墙饰以花岗岩作装饰，石料加工粗朴。米红色筒瓦、蓝色鱼鳞瓦、绿色牛舌瓦铺设楼顶，使大楼更加精美别致。\n' +
+        '建筑主体为四层，共有大小房间30个，其中主要展厅14个。各个展厅互相贯通，却又各成一体，更令人称奇的是，每个展厅又三个不同之处，其内部装饰之豪华、造型之典雅，至今仍雄居我国单体建筑之首列。</td></tr>'+
+        '</table>' ;
+
+    function addBillboard() {
+        Sandcastle.declare(addBillboard);
+
+        viewer.entities.add({
+            name:'总督府',
+            description: ZDFcontent+'<a href="https://map.baidu.com/poi/%E8%83%B6%' +
+                'E6%BE%B3%E6%80%BB%E7%9D%A3%E5%BA%9C%E6%97%A7%E5%9D%80/@13395303.17,4292669.54,11z?uid=b6992c8bd0a879a7018972b5&primaryUid=6058356483435483593&ugc' +
+                '_type=3&ugc_ver=1&device_ratio=1&compat=1&querytype=detailConInfo&da_src=shareurl" target = "_blank" style="float:top;margin-left:0px;">总督府地图链接</a>',
+            position : Cesium.Cartesian3.fromDegrees(120.3190255, 36.06310826, 57.99759057),
+            billboard :{
+                image : './img/biaoqian.png',
+                scale:0.5
+            }
+        });
+
+
+        viewer.entities.add({
+            name:'北京航空航天大学青岛研究院',
+            description: BHcontent+'<a href="https://720yun.com/t/a30jrzmfev9?scene_id=27096172" target = "_blank" style="float:top;margin-left:0px;">研究院全景视频链接</a>'+
+                    '<video src = "./Video/BHQDITI_video.mkv" controls="controls" width = "400",height = "400"></video>',
+            position : Cesium.Cartesian3.fromDegrees(120.506967, 36.18869936,180),
+            billboard :{
+                image : './img/biaoqian.png',
+                scale:0.5
+            }
+        });
+    }
+
+    var snowSystem;
+    function snowShow(){
+        var snowParticleSize = viewer.scene.drawingBufferWidth / 100;
+        var snowRadius = 100000.0;
+        var minSnowImageSize = new Cesium.Cartesian2(snowParticleSize,snowParticleSize);
+        var maxSnowImageSize = new Cesium.Cartesian2(snowParticleSize*2,snowParticleSize*2);
+        var snowGravity = new Cesium.Cartesian3();
+        var snowUpdate = function (particle, dt) {
+            snowGravity = Cesium.Cartesian3.normalize(particle.position,snowGravity);
+            Cesium.Cartesian3.multiplyByScalar(snowGravity,Cesium.Math.randomBetween(-40.0,-100.0),snowGravity);
+            particle.velocity  = Cesium.Cartesian3.add(particle.velocity,snowGravity,particle.velocity);
+
+            var distance = Cesium.Cartesian3.distance(viewer.scene.camera.position,particle.position);
+            if (distance > snowRadius)
+                particle.endColor.alpha = 0.0;
+            else
+                particle.endColor.alpha = snowSystem.endColor.alpha /(distance / snowRadius + 0.1);
+        };
+
+        snowSystem = new Cesium.ParticleSystem({
+            modelMatrix : new Cesium.Matrix4.fromTranslation(viewer.scene.camera.position),
+            minimumSpeed : -1.0,
+            maximumSpeed : 0.0,
+            lifetime : 15.0,
+            emitter : new Cesium.SphereEmitter(snowRadius),
+            startScale : 0.5,
+            endScale : 1.0,
+            image : './img/snowflake_particle.png',
+            emissionRate : 3000.0,
+            startColor : Cesium.Color.WHITE.withAlpha(0.0),
+            endColor : Cesium.Color.WHITE.withAlpha(1.0),
+            minimumImageSize : minSnowImageSize,
+            maximumImageSize : maxSnowImageSize,
+            updateCallback : snowUpdate
+        });
+
+        viewer.scene.primitives.add(snowSystem);
+    };
+
+
+    //左边边添加工具按钮
+    Sandcastle.addToolbarMenu([
+        {
+            text:'场景列表'
+
+        },
+        {
+            text:'北航青岛研究院',
+            onselect:function () {
+                var boundingSphere = new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(120.506967, 36.18869936, 37.81288381), 363.544424);
+                viewer.camera.flyToBoundingSphere(boundingSphere);
+            }
+        },
+        {
+            text:'总督府',
+            onselect:function () {
+                var boundingSphere = new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(120.3190255, 36.06310826, 47.99759057), 363.544424);
+                viewer.camera.flyToBoundingSphere(boundingSphere);
+            }
+        },
+        {
+            text:'大教堂',
+            onselect:function () {
+                var boundingSphere = tileset3.boundingSphere;
+                viewer.camera.flyToBoundingSphere(boundingSphere);
+            }
+        },
+        {
+            text:'中国海洋大学',
+            onselect:function () {
+                var boundingSphere = new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(120.4930629, 36.16200471, 62.92985113), 1364.970874);
+                viewer.camera.flyToBoundingSphere(boundingSphere);
+            }
+        },
+        {
+            text:'即墨古城',
+            onselect:function () {
+                var boundingSphere = new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(120.4647623, 36.38918064, 31.74609211), 351.0149331);
+                viewer.camera.flyToBoundingSphere(boundingSphere);
+            }
+        },
+        {
+            text:'天津理工',
+            onselect:function () {
+                var boundingSphere = new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(117.105343, 39.064594, 24.94440182), 1215.289617);
+                viewer.camera.flyToBoundingSphere(boundingSphere);
+            }
+        },
+        {
+            text:'标签',
+            onselect:function () {
+                addBillboard();
+                Sandcastle.highlight(addBillboard);
+            }
+        },
+        {
+            text:'实用工具',
+            onselect:function () {
+                //viewer.extend(Cesium.viewerCesium3DTilesInspectorMixin);
+                viewer.extend(Cesium.viewerCesium3DTilesInspectorMixin);  //cesium小工具
+            }
+        },
+        {   text:'路径追踪',
+            onselect:function(){
+                var boundingSphere = new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(120.3190255, 36.06310826, 47.99759057), 363.544424);
+                viewer.camera.flyToBoundingSphere(boundingSphere);
+                viewer.dataSources.add(Cesium.CzmlDataSource.load(/*"SampleData/boy_path.czml"*/czml )).then(function (ds) {
+                    //viewer.trackedEntity = ds.entities.getById("消防车");关闭追踪
+                });
+            }
+        },
+        {
+            text:'清除实例',
+            onselect:function () {
+                handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK);
+                handler.removeInputAction(Cesium.ScreenSpaceEventType.RIGHT_CLICK);
+
+                viewer.entities.removeAll();
+                viewer.dataSources.removeAll();
+
+
+                var entitys = viewer.entities._entities._array;
+                // for(var i =  entitys.length-1; i>=0;i--){
+                //     if (entitys[i]._name == 'polygon'){
+                //         viewer.entities.remove(entitys[i]);
+                //     }
+                // }
+
+                if(snowSystem)
+                    snowSystem.show = false;
+                //清楚火灾效果
+                for(let i = fireArry.length;i>0;i--) {
+                    viewer.scene.primitives.remove(fireArry.pop());
+                }
+
+                var p = viewer.scene.primitives;
+                //p.removeAll();
+                //viewer.scene.primitives.remove(p._primitives[p._primitives.length-1]); //删除多余的点,关键是这个点在什么时候产生的？
+            }
+        }
+    ],'zoomButtons');
+
+
+    Sandcastle.addToolbarMenu([
+        {
+            text:"功能列表"
+        },
+        {
+            text:'天气-雪',
+            onselect:function () {
+                if(snowSystem)
+                    snowSystem.show = true;
+                else
+                    snowShow();
+            }
+        },
+        {
+            text:'添加行人',
+            onselect:function () {
+                addMan();
+            }
+
+        },
+
+        {
+            text:'火灾模拟',
+            onselect:function () {
+                fireSimlation();
+            }
+
+        },
+        {
+            text:'选择区域',
+            onselect:function () {
+                drawAreaSpace();
+            }
+
+        }
+
+    ],'zoomButtons');
+
+    var man = [];
+    function addMan(){
+        handler.setInputAction(
+            function (movement) {
+                var pick = viewer.scene.pickPosition(movement.position);
+                if (Cesium.defined(pick)) {
+                    // var wgs84 = ellipsoid.cartesianToCartographic(pick);
+                    var entity = viewer.entities.add({
+                        name:"gltf动画",
+                        position:pick,
+                        model: {
+                            uri:"SampleData/gltf/boy_action_jpg_out/boy_action_jpg.gltf"
+                        }
+                    }  );
+                    man.push(entity);
+
+                }
+            },
+            Cesium.ScreenSpaceEventType.LEFT_CLICK
+        );
+    }
+
+    var fireArry = [];
+    function fireSimlation(){
+        handler.setInputAction(
+            function (movement) {
+                var pick = viewer.scene.pickPosition(movement.position);
+                if (Cesium.defined(pick)) {
+                    //粒子系统
+                    var modelMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(pick);
+                    var particleSystem = viewer.scene.primitives.add(new Cesium.ParticleSystem({
+                        image: "./img/fire.png",
+                        minimumWidth:20,
+                        maximumWidth:200,
+                        minimumHeight:20,
+                        maximumHeight:200,
+                        startScale:10.0,
+                        endScale:30.0,
+                        particleSize:160,
+                        speed:5.0,
+                        emitter:new Cesium.CircleEmitter(3),  //指定发射器圆的半径
+                        //  rate:100.0,                            //指定粒子发射当时速率/s
+                        emissionRate:1000,
+                        bursts : [
+                            // these burst will occasionally sync to create a multicolored effect
+                            new Cesium.ParticleBurst({time : 5.0, minimum : 100, maximum : 1000}),
+                            new Cesium.ParticleBurst({time : 10.0, minimum : 500, maximum : 1000}),
+                            new Cesium.ParticleBurst({time : 15.0, minimum : 2000, maximum : 3000})
+                        ],
+                        //emitterModelMatrix:matri1x,   //在例子系统局部坐标中变换粒子系统发射器
+                        modelMatrix:modelMatrix,
+                        lifetime:1.0,
+                        minimumLife:5.0,
+                        maximumLife:10.0
+                    }));
+
+                }
+                fireArry.push(particleSystem);
+            },
+            Cesium.ScreenSpaceEventType.LEFT_CLICK
+        );
+    }
+
+    Sandcastle.addToggleButton('距离测量', false ,function(checked) {
+        if (checked){
+            measureLineSpace();
+            //var p = viewer.scene.primitives;
+        }else {
+
+            handler.removeInputAction(Cesium.ScreenSpaceEventType.RIGHT_CLICK);
+            viewer.entities.removeById("line2");
+
+            var entitys = viewer.entities._entities._array;
+            for(var i =  entitys.length-1; i>=0;i--){
+                 if (entitys[i]._name == 'point'){
+                     viewer.entities.remove(entitys[i]);
+                 }
+             }
+           // viewer.entities.removeAll();
+            //var p = viewer.scene.primitives;
+            //viewer.scene.primitives.remove(p._primitives[p._primitives.length-1]); //删除多余的点,关键是这个点在什么时候产生的？
+            //console.log( p._primitives[p._primitives.length-1]);
+            //p._primitives[0].show = false;
+        }
+    });
+
+    Sandcastle.addToggleButton('面积测量', false ,function(checked) {
+        if (checked){
+            measureAreaSpace();
+        }else {
+
+             handler.removeInputAction(Cesium.ScreenSpaceEventType.RIGHT_CLICK);
+             viewer.entities.removeById("plane");
+
+            var entitys = viewer.entities._entities._array;
+            for(var i =  entitys.length-1; i>=0;i--){
+                if (entitys[i]._name == 'point'){
+                    viewer.entities.remove(entitys[i]);
+                }
+            }
+           // var p = viewer.scene.primitives;
+        }
+    });
+
+    /*function dragEntity() {
+        //  plane.polygon.extrudedHeight=  2000;
+
+        var leftDownFlag = false;
+        var pointDraged = null;
+        Init();
+
+        function Init() {
+            // Select plane when mouse down
+            handler.setInputAction(function (movement) {
+                pointDraged = viewer.scene.pick(movement.position);//选取当前的entity
+               // pointDraged.id.polygon.extrudedHeight=  2000;
+                leftDownFlag = true;
+                if (pointDraged) {
+                    viewer.scene.screenSpaceCameraController.enableRotate = false;//锁定相机
+                }
+            }, Cesium.ScreenSpaceEventType.LEFT_DOWN);
+
+            // Release plane on mouse up
+            handler.setInputAction(function () {
+                leftDownFlag = false;
+                pointDraged = null;
+                viewer.scene.screenSpaceCameraController.enableInputs = true;
+            }, Cesium.ScreenSpaceEventType.LEFT_UP);
+
+            // Update plane on mouse move
+            handler.setInputAction(function (movement) {
+                if (leftDownFlag === true && pointDraged != null) {
+                     let ray = viewer.camera.getPickRay(movement.endPosition);
+                     let cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+                    //console.log(cartesian);
+                    //打印经纬度范围
+                    if (cartesian) {
+                        var ellipsoid = viewer.scene.globe.ellipsoid;
+                        //将笛卡尔坐标转换为地理坐标
+                        var cartographic = ellipsoid.cartesianToCartographic(cartesian);
+                        //将弧度转为度的十进制度表示
+                        //var longitudeString = Cesium.Math.toDegrees(cartographic.longitude);
+                        //var latitudeString = Cesium.Math.toDegrees(cartographic.latitude);
+                        var height = cartographic.height;
+                        //console.log(longitudeString,latitudeString,height);
+                    }
+                   // let t = 10;
+                    //pointDraged.id.polygon.extrudedHeight=1000;
+                    pointDraged.id.polygon.extrudedHeight = new Cesium.CallbackProperty(function () {
+                        //return height;
+                    }, false);//防止闪烁，在移动的过程
+                }
+            }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+        }
+
+    }  */
+
+    Sandcastle.addToggleButton('阴影', viewer.shadows, function(checked) {
+        viewer.shadows = checked;
+    });
+    //
+    // Sandcastle.addToggleButton('实时光照', viewer.scene.globe.enableLighting, function(checked) {
+    //     viewer.scene.globe.enableLighting = checked;
+    // });
+
+    var handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+    //****************************测量空间直线距离************************************************//
+    function measureLineSpace() {
+        var positions = [];  //只保存左键单击的点
+        var poly= null;
+        var tooltip = document.getElementById("toolTip");
+        var distance = 0;
+        var cartesian = null;
+        var floatingPoint;
+        tooltip.style.display = "block";
+        //监听移动事件
+        handler.setInputAction(function (movement) {
+            tooltip.style.left = movement.endPosition.x+20+"px";
+            tooltip.style.top = movement.endPosition.y+20+"px";
+            tooltip.innerHTML = '<td> 单击开始，右击结束</td>';
+            //移动的结束位置
+            cartesian = viewer.scene.pickPosition(movement.endPosition);
+           // console.log(cartesian);
+            //判断点是否在画布上
+            if(Cesium.defined(cartesian)){
+                if(positions.length>=2){
+                    if(!Cesium.defined(poly)){
+                        poly = new PolyLinePrimitive(positions);
+
+                    }else {
+                        positions.pop();  //实时绘制两个点之间的直线，否则绘制贴近模型表面的
+                        positions.push(cartesian);
+                    }
+                    distance = getSpaceDistance(positions);
+                };
+            }
+        },Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+        //监听单击事件
+        handler.setInputAction(function (movement) {
+            tooltip.style.display = "none";
+            cartesian = viewer.scene.pickPosition(movement.position);
+            //打印经纬度范围
+            // if (cartesian) {
+            //     var ellipsoid = viewer.scene.globe.ellipsoid;
+            //     //将笛卡尔坐标转换为地理坐标
+            //     var cartographic = ellipsoid.cartesianToCartographic(cartesian);
+            //     //将弧度转为度的十进制度表示
+            //     var longitudeString = Cesium.Math.toDegrees(cartographic.longitude);
+            //     var latitudeString = Cesium.Math.toDegrees(cartographic.latitude);
+            //     //获取相机高度
+            //     var height = cartographic.height;
+            //     console.log(longitudeString,latitudeString,height);
+            // }
+
+            if(Cesium.defined(cartesian)){
+                if(positions.length ==0){
+                    positions.push(cartesian.clone());
+                }
+            }
+            positions.push(cartesian);
+            //在场景中添加Label
+            var textDistance = distance+"米";
+            floatingPoint = viewer.entities.add({
+               // id:"point",
+                name :'point',
+                position: cartesian,//positions[positions.length-1],
+                point: {
+                    pixelSize:5,
+                    color:Cesium.Color.RED,
+                    outlineColor:Cesium.Color.WHITE,
+                    outlineWidth:2,
+                    heightReference:Cesium.HeightReference.NONE
+                },
+                label: {
+                    text:textDistance,
+                    font:'18px sans-serif',
+                    fillColor:Cesium.Color.GOLD,
+                    style:Cesium.LabelStyle.FILL_AND_OUTLINE,
+                    outlineWidth:2,
+                    verticalOrigin:Cesium.VerticalOrigin.BOTTOM,
+                    pixelOffset: new Cesium.Cartesian2(20,-20),
+                    heightReference:Cesium.HeightReference.NONE
+                }
+            });
+
+        },Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+        //监听右击事件
+        handler.setInputAction(function (movement) {
+           // handler.destroy();//关闭事件句柄
+            handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK);
+            handler.removeInputAction(Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+            positions.pop();//最后一个点无效
+            positions = []; //清空数组
+        },Cesium.ScreenSpaceEventType.RIGHT_CLICK);
+    }
+    function getSpaceDistance(positions){
+        var d = 0;
+        for(let i =0 ;i < positions.length-1;i++){
+            s=distance(positions[i],positions[i+1]);
+            d += s;
+        }
+        return d.toFixed(2);
+
+    }
+    //绘制线段
+    var PolyLinePrimitive = (function () {
+        function _(positions) {
+            this.options = {
+                id: 'line2',
+                polyline: {
+                    show: true,
+                    positions: [],
+                    material: Cesium.Color.CHARTREUSE,
+                    width: 5,
+                    clampToGround: false,   //不贴地
+                    classificationType :Cesium.ClassificationType.CESIUM_3D_TILE,
+                }
+            };
+            this.positions = positions;
+            this._init();
+        }
+
+        _.prototype._init = function () {
+            var _self = this;
+            var _update = function () {
+                return _self.positions;
+            };
+            //实时更新polyline.positions
+            this.options.polyline.positions = new Cesium.CallbackProperty(_update, false);
+            viewer.entities.add(this.options);
+        };
+
+        return _;
+    })();
+
+    //****************************测量空间面积************************************************//
+    function measureAreaSpace(){
+        var positions = [];
+        var tempPoints = [];
+        var polygon = null;
+        var cartesian = null;
+        var floatingPoint;//浮动点
+        var tooltip = document.getElementById("toolTip");
+        tooltip.style.display = "block";
+
+        handler.setInputAction(function(movement){
+             tooltip.style.left = movement.endPosition.x + 20 + "px";
+             tooltip.style.top = movement.endPosition.y +20 + "px";
+             tooltip.innerHTML ='<td>单击开始，右击结束</td>';
+            // cartesian = viewer.scene.pickPosition(movement.endPosition);
+            //let ray = viewer.camera.getPickRay(movement.endPosition);
+            //cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+            cartesian = viewer.scene.pickPosition(movement.endPosition);
+            if(positions.length >= 2){
+                if (!Cesium.defined(polygon)) {
+                    polygon = new PolygonPrimitive(positions);
+                }else{
+                    positions.pop();
+                    // cartesian.y += (1 + Math.random());
+                    positions.push(cartesian);
+                }
+            }
+        },Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+        handler.setInputAction(function(movement){
+            tooltip.style.display = "none";
+            cartesian = viewer.scene.pickPosition(movement.position);
+            // cartesian = viewer.scene.camera.pickEllipsoid(movement.position, viewer.scene.globe.ellipsoid);
+            if(positions.length == 0) {
+                positions.push(cartesian.clone());
+            }
+
+            positions.push(cartesian);
+            //在三维场景中添加点
+            var cartographic = Cesium.Cartographic.fromCartesian(positions[positions.length - 1]);
+            var longitudeString = Cesium.Math.toDegrees(cartographic.longitude);
+            var latitudeString = Cesium.Math.toDegrees(cartographic.latitude);
+            var heightString = cartographic.height;
+            tempPoints.push({ lon: longitudeString, lat: latitudeString ,hei:heightString});
+            floatingPoint = viewer.entities.add({
+                name : 'point',
+                position : cartesian,//positions[positions.length - 1],
+                point : {
+                    pixelSize : 5,
+                    color : Cesium.Color.RED,
+                    outlineColor : Cesium.Color.WHITE,
+                    outlineWidth : 2,
+                    heightReference:Cesium.HeightReference.NONE  //高度不贴地面
+                }
+            });
+        },Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+        handler.setInputAction(function(movement){
+            handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK);
+            handler.removeInputAction(Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+            positions.pop();
+            var textArea = getArea(tempPoints) ;
+            viewer.entities.add({
+                name : 'point',
+                position : positions[positions.length - 1],
+                label : {
+                    text : textArea,
+                    font : '20px sans-serif',
+                    fillColor : Cesium.Color.GOLD,
+                    style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                    outlineWidth : 2,
+                    verticalOrigin : Cesium.VerticalOrigin.BOTTOM,
+                    pixelOffset : new Cesium.Cartesian2(20, -40),
+                    heightReference:Cesium.HeightReference.RELATIVE_TO_GROUND  //相对地面的高度
+                }
+            });
+        }, Cesium.ScreenSpaceEventType.RIGHT_CLICK );
+
+
+        var radiansPerDegree = Math.PI / 180.0;//角度转化为弧度(rad)
+        var degreesPerRadian = 180.0 / Math.PI;//弧度转化为角度
+
+        //计算多边形面积
+        function getArea(points) {
+
+            var res = 0;
+            //拆分三角曲面
+
+            for (var i = 0; i < points.length - 2; i++) {
+                var j = (i + 1) % points.length;
+                var k = (i + 2) % points.length;
+                var totalAngle = Angle(points[i], points[j], points[k]);
+
+
+                var dis_temp1 = distance(positions[i], positions[j]);
+                var dis_temp2 = distance(positions[j], positions[k]);
+                res += dis_temp1 * dis_temp2 * Math.abs(Math.sin(totalAngle)) *0.5 ;
+                //console.log(res);
+            }
+
+            if (res>1000000.0){
+                return (res/1000000.0).toFixed(4)+ "km²";
+            }else {
+                return res.toFixed(4)+ "m²";
+            }
+
+           // return (res/1000000.0).toFixed(4);
+        }
+
+        /*角度*/
+        function Angle(p1, p2, p3) {
+            var bearing21 = Bearing(p2, p1);
+            var bearing23 = Bearing(p2, p3);
+            var angle = bearing21 - bearing23;
+            if (angle < 0) {
+                angle += 360;
+            }
+            return angle;
+        }
+        /*方向*/
+        function Bearing(from, to) {
+            var lat1 = from.lat * radiansPerDegree;
+            var lon1 = from.lon * radiansPerDegree;
+            var lat2 = to.lat * radiansPerDegree;
+            var lon2 = to.lon * radiansPerDegree;
+            var angle = -Math.atan2(Math.sin(lon1 - lon2) * Math.cos(lat2), Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon1 - lon2));
+            if (angle < 0) {
+                angle += Math.PI * 2.0;
+            }
+            angle = angle * degreesPerRadian;//角度
+            return angle;
+        }
+
+        //创建立即自执行函数
+        var PolygonPrimitive = (function(){
+            function _(positions){
+                this.options = {
+                    id:"plane",
+                    name:'多边形',
+                    polygon : {
+                        hierarchy : [],
+                        //perPositionHeight : true,   //true使得不贴地,直接根据给定的点构建平面
+                        material : Cesium.Color.GREENYELLOW.withAlpha(0.2),
+                        //extrudedHeight:200,   //将该多边形从地面开始给拉高100m
+                        classificationType:Cesium.ClassificationType.CESIUM_3D_TILE  //贴在自己模型表面
+                    }
+                };
+
+                this.hierarchy = positions;
+                this._init();
+            }
+
+            _.prototype._init = function(){
+                var _self = this;
+                var _update = function(){
+                    return _self.hierarchy;
+                };
+                //实时更新polygon.hierarchy
+                this.options.polygon.hierarchy = new Cesium.CallbackProperty(_update,false);
+                viewer.entities.add(this.options);
+            };
+
+            return _;
+        })();
+    }
+    //计算两点之间的测地距离
+    function distance(point1,point2){
+        var point1cartographic = Cesium.Cartographic.fromCartesian(point1);
+        var point2cartographic = Cesium.Cartographic.fromCartesian(point2);
+        /**根据经纬度计算出距离**/
+        var geodesic = new Cesium.EllipsoidGeodesic();
+        geodesic.setEndPoints(point1cartographic, point2cartographic);
+        var s = geodesic.surfaceDistance;
+        //console.log(Math.sqrt(Math.pow(distance, 2) + Math.pow(endheight, 2)));
+        //返回两点之间的距离
+        s = Math.sqrt(Math.pow(s, 2) + Math.pow(point2cartographic.height - point1cartographic.height, 2));
+        return s;
+    }
+
+    //绘制贴地多边形
+    function drawAreaSpace(){
+        var positions = [];
+        var tempPoints = [];
+        var polygon = null;
+        var cartesian = null;
+        var floatingPoint;//浮动点
+        var tooltip = document.getElementById("toolTip");
+        tooltip.style.display = "block";
+
+        handler.setInputAction(function(movement){
+            tooltip.style.left = movement.endPosition.x + 20 + "px";
+            tooltip.style.top = movement.endPosition.y +20 + "px";
+            tooltip.innerHTML ='<td>单击开始，右击结束</td>';
+            cartesian = viewer.scene.pickPosition(movement.endPosition);
+            if(positions.length >= 2){
+                if (!Cesium.defined(polygon)) {
+                    polygon = new PolygonPrimitive(positions);
+                }else{
+                    positions.pop();
+                    // cartesian.y += (1 + Math.random());
+                    positions.push(cartesian);
+                }
+            }
+        },Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+        handler.setInputAction(function(movement){
+            tooltip.style.display = "none";
+            cartesian = viewer.scene.pickPosition(movement.position);
+            // cartesian = viewer.scene.camera.pickEllipsoid(movement.position, viewer.scene.globe.ellipsoid);
+            if(positions.length == 0) {
+                positions.push(cartesian.clone());
+            }
+            positions.push(cartesian);
+            //在三维场景中添加点
+            var cartographic = Cesium.Cartographic.fromCartesian(positions[positions.length - 1]);
+            var longitudeString = Cesium.Math.toDegrees(cartographic.longitude);
+            var latitudeString = Cesium.Math.toDegrees(cartographic.latitude);
+            var heightString = cartographic.height;
+            tempPoints.push({ lon: longitudeString, lat: latitudeString ,hei:heightString});
+            floatingPoint = viewer.entities.add({
+                name : 'point',
+                position : cartesian,//positions[positions.length - 1],
+                point : {
+                    pixelSize : 5,
+                    color : Cesium.Color.RED,
+                    outlineColor : Cesium.Color.WHITE,
+                    outlineWidth : 2,
+                    heightReference:Cesium.HeightReference.NONE  //高度不贴地面
+                }
+            });
+        },Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+        handler.setInputAction(function(movement){
+            handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK);
+            handler.removeInputAction(Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+            positions.pop();
+            viewer.entities.add({
+                name : 'point',
+                position : positions[positions.length - 1],
+                // label : {
+                //     text : textArea,
+                //     font : '20px sans-serif',
+                //     fillColor : Cesium.Color.GOLD,
+                //     style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                //     outlineWidth : 2,
+                //     verticalOrigin : Cesium.VerticalOrigin.BOTTOM,
+                //     pixelOffset : new Cesium.Cartesian2(20, -40),
+                //     heightReference:Cesium.HeightReference.RELATIVE_TO_GROUND  //相对地面的高度
+                // }
+            });
+        }, Cesium.ScreenSpaceEventType.RIGHT_CLICK );
+
+        var radiansPerDegree = Math.PI / 180.0;//角度转化为弧度(rad)
+        var degreesPerRadian = 180.0 / Math.PI;//弧度转化为角度
+
+        //计算多边形面积
+        function getArea(points) {
+
+            var res = 0;
+            //拆分三角曲面
+
+            for (var i = 0; i < points.length - 2; i++) {
+                var j = (i + 1) % points.length;
+                var k = (i + 2) % points.length;
+                var totalAngle = Angle(points[i], points[j], points[k]);
+
+
+                var dis_temp1 = distance(positions[i], positions[j]);
+                var dis_temp2 = distance(positions[j], positions[k]);
+                res += dis_temp1 * dis_temp2 * Math.abs(Math.sin(totalAngle)) *0.5 ;
+                //console.log(res);
+            }
+
+            if (res>1000000.0){
+                return (res/1000000.0).toFixed(4)+ "km²";
+            }else {
+                return res.toFixed(4)+ "m²";
+            }
+
+            // return (res/1000000.0).toFixed(4);
+        }
+
+        /*角度*/
+        function Angle(p1, p2, p3) {
+            var bearing21 = Bearing(p2, p1);
+            var bearing23 = Bearing(p2, p3);
+            var angle = bearing21 - bearing23;
+            if (angle < 0) {
+                angle += 360;
+            }
+            return angle;
+        }
+        /*方向*/
+        function Bearing(from, to) {
+            var lat1 = from.lat * radiansPerDegree;
+            var lon1 = from.lon * radiansPerDegree;
+            var lat2 = to.lat * radiansPerDegree;
+            var lon2 = to.lon * radiansPerDegree;
+            var angle = -Math.atan2(Math.sin(lon1 - lon2) * Math.cos(lat2), Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon1 - lon2));
+            if (angle < 0) {
+                angle += Math.PI * 2.0;
+            }
+            angle = angle * degreesPerRadian;//角度
+            return angle;
+        }
+
+        //创建立即自执行函数
+        var PolygonPrimitive = (function(){
+            function _(positions){
+                this.options = {
+                    id:"3D",
+                    name:'polygon',
+                    polygon : {
+                        hierarchy : [],
+                        //perPositionHeight : true,   //true使得不贴地,直接根据给定的点构建平面
+                        material : Cesium.Color.GREENYELLOW.withAlpha(0.5),
+                        //extrudedHeight:100,   //将该多边形从地面开始给拉高100m
+                        outline : true,
+                        outlineColor : Cesium.Color.DARK_GREEN,
+                        classificationType:Cesium.ClassificationType.CESIUM_3D_TILE  //贴在自己模型表面
+                    }
+                };
+
+                this.hierarchy = positions;
+                this._init();
+            }
+
+            _.prototype._init = function(){
+                var _self = this;
+                var _update = function(){
+                    return _self.hierarchy;
+                };
+                //实时更新polygon.hierarchy
+                this.options.polygon.hierarchy = new Cesium.CallbackProperty(_update,false);
+                viewer.entities.add(this.options);
+            };
+
+            return _;
+        })();
+    }
+
+
+    /**************************cesium全局等高线 坡度分析******************************************/
+    // The viewModel tracks the state of our mini application.
+    var viewModel = {
+        enableContour: false,
+        contourSpacing: 5.0,
+        contourWidth: 2.0,
+        selectedShading: 'none',
+        changeColor: function() {
+            contourUniforms.color = Cesium.Color.fromRandom({alpha: 1.0}, contourColor);
+        },
+        //体积计算
+            height:0.0
+    };
+    // cesimud的第三方插件。Convert the viewModel members into knockout observables.
+    Cesium.knockout.track(viewModel);
+    // Bind the viewModel to the DOM elements of the UI that call for it.
+    var toolbar = document.getElementById('toolbar');
+    Cesium.knockout.applyBindings(viewModel, toolbar);
+    Cesium.knockout.getObservable(viewModel, 'enableContour').subscribe(function(newValue) {
+        updateMaterial();
+    });
+    Cesium.knockout.getObservable(viewModel, 'contourWidth').subscribe(function(newValue) {
+        contourUniforms.width = parseFloat(newValue);
+    });
+
+    Cesium.knockout.getObservable(viewModel, 'contourSpacing').subscribe(function(newValue) {
+        contourUniforms.spacing = parseFloat(newValue);
+    });
+
+    Cesium.knockout.getObservable(viewModel, 'selectedShading').subscribe(function(value) {
+        updateMaterial();
+    });
+
+
+    Cesium.knockout.getObservable(viewModel, 'height').subscribe(function(value) {
+        var e = viewer.entities.getById("3D");
+        if(e){
+            e.polygon.extrudedHeight = new Cesium.CallbackProperty(function () {
+                return value;
+            }, false);//防止闪烁，在移动的过程
+        }else {
+            alert("请预先选择分析区域");
+            return;
+        }
+    });
+
+    var minHeight = -414.0; // approximate dead sea elevation
+    var maxHeight = 8777.0; // approximate everest elevation
+    var contourColor = Cesium.Color.RED.clone();
+    var contourUniforms = {};
+    var shadingUniforms = {};
+
+   // updateMaterial();
+    function  updateMaterial() {
+        var hasContour = viewModel.enableContour;
+        var selectedShading = viewModel.selectedShading;
+        var globe = viewer.scene.globe;
+        var material;
+        if(hasContour){
+            if (selectedShading === 'elevation') {
+                material = getElevationContourMaterial();
+                shadingUniforms = material.materials.elevationRampMaterial.uniforms;
+                shadingUniforms.minimumHeight = minHeight;
+                shadingUniforms.maximumHeight = maxHeight;
+                contourUniforms = material.materials.contourMaterial.uniforms;
+            } else if (selectedShading === 'slope') {
+                material = getSlopeContourMaterial();
+                shadingUniforms = material.materials.slopeRampMaterial.uniforms;
+                contourUniforms = material.materials.contourMaterial.uniforms;
+            } else if (selectedShading === 'aspect') {
+                material = getAspectContourMaterial();
+                shadingUniforms = material.materials.aspectRampMaterial.uniforms;
+                contourUniforms = material.materials.contourMaterial.uniforms;
+            } else {
+                material = Cesium.Material.fromType('ElevationContour');
+                contourUniforms = material.uniforms;
+            }
+            contourUniforms.width = viewModel.contourWidth;
+            contourUniforms.spacing = viewModel.contourSpacing;
+            contourUniforms.color = contourColor;
+        }else if (selectedShading === 'elevation') {
+            material = Cesium.Material.fromType('ElevationRamp');
+            shadingUniforms = material.uniforms;
+            shadingUniforms.minimumHeight = minHeight;
+            shadingUniforms.maximumHeight = maxHeight;
+        } else if (selectedShading === 'slope') {
+            material = Cesium.Material.fromType('SlopeRamp');
+            shadingUniforms = material.uniforms;
+        } else if (selectedShading === 'aspect') {
+            material = Cesium.Material.fromType('AspectRamp');
+            shadingUniforms = material.uniforms;
+        }
+        if (selectedShading !== 'none') {
+            shadingUniforms.image = getColorRamp(selectedShading);
+        }
+
+        globe.material = material;
+
+    }
+
+    function getElevationContourMaterial() {
+        // Creates a composite material with both elevation shading and contour lines
+        return new Cesium.Material({
+            fabric: {
+                type: 'ElevationColorContour',
+                materials: {
+                    contourMaterial: {
+                        type: 'ElevationContour'
+                    },
+                    elevationRampMaterial: {
+                        type: 'ElevationRamp'
+                    }
+                },
+                components: {   //components属性包含了 定义了材质外观的子属性。每个子属性是一个GLSL的代码段
+                    diffuse: 'contourMaterial.alpha == 0.0 ? elevationRampMaterial.diffuse : contourMaterial.diffuse',
+                    alpha: 'max(contourMaterial.alpha, elevationRampMaterial.alpha)'
+                }
+            },
+            translucent: false
+        });
+    }
+
+    function getSlopeContourMaterial() {
+        // Creates a composite material with both slope shading and contour lines
+        return new Cesium.Material({
+            fabric: {
+                type: 'SlopeColorContour',
+                materials: {
+                    contourMaterial: {
+                        type: 'ElevationContour'
+                    },
+                    slopeRampMaterial: {
+                        type: 'SlopeRamp'
+                    }
+                },
+                components: {
+                    diffuse: 'contourMaterial.alpha == 0.0 ? slopeRampMaterial.diffuse : contourMaterial.diffuse',
+                    alpha: 'max(contourMaterial.alpha, slopeRampMaterial.alpha)'
+                }
+            },
+            translucent: false
+        });
+    }
+
+
+    var elevationRamp = [0.0, 0.045, 0.1, 0.15, 0.37, 0.54, 1.0];  //高程色差
+    var slopeRamp = [0.0, 0.29, 0.5, Math.sqrt(2)/2, 0.87, 0.91, 1.0];  //坡度色差
+    var aspectRamp = [0.0, 0.2, 0.4, 0.6, 0.8, 0.9, 1.0];
+    function getColorRamp(selectedShading) {
+        var ramp = document.createElement('canvas');
+        ramp.width = 100;
+        ramp.height = 1;
+        var ctx = ramp.getContext('2d');
+
+        var values;
+        var grd = ctx.createLinearGradient(0, 0, 100, 0);
+        if (selectedShading === 'elevation') {
+            values = elevationRamp;
+            grd.addColorStop(values[0], '#000000'); //black
+            grd.addColorStop(values[1], '#2747E0'); //blue
+            grd.addColorStop(values[2], '#D33B7D'); //pink
+            grd.addColorStop(values[3], '#D33038'); //red
+            grd.addColorStop(values[4], '#FF9742'); //orange
+            grd.addColorStop(values[5], '#ffd700'); //yellow
+            grd.addColorStop(values[6], '#ffffff'); //white
+        } else if (selectedShading === 'slope') {
+            values = slopeRamp;
+            grd.addColorStop(values[6], '#000000');
+            grd.addColorStop(values[5], '#2747E0');
+            grd.addColorStop(values[4], '#D33B7D');
+            grd.addColorStop(values[3], '#D33038');
+            grd.addColorStop(values[2], '#FF9742');
+            grd.addColorStop(values[1], '#ffd700');
+            grd.addColorStop(values[0], '#ffffff');
+
+            layer.closeAll();
+            layer.open({
+                type: 1,
+                offset: ["60%", "2%"],  //位置
+                area: ['170px', '179px'], //图层大小
+                title: "颜色对照表"
+                ,
+                content:contents
+                ,
+                btnAlign: 'c' //按钮居中
+                ,
+                shade: 0 //不显示遮罩
+                ,
+                cancel: function(index) {
+                    layer.close(index);
+                }
+            });
+        } else if (selectedShading === 'aspect') {
+            values = aspectRamp;
+        }
+
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, 100, 1);
+
+        return ramp;
+    }
+
+    var contents="<div class='slope_layer'><div> <div style='height:19px;background-color:#000000; width: 64px;float: left;'> </div><span style='color: #6A5ACD' > [0,0.29)</span></div>";
+    contents+=" <div  style='clear: both;'><div style='height:19px;background-color:#2747E0 ; width: 64px;float: left;'></div><span style='color: #6A5ACD' > [0.29,0.5)</span></div>";
+    contents+="<div   style='clear: both;'><div style='height:19px;background-color:#D33B7D;width: 64px;float: left;'> </div><span style='color: #6A5ACD' > [0.5,0.7)</span></div>";
+    contents+=" <div  style='clear: both;'><div style='height:19px;background-color:#D33038;width: 64px;float: left;'> </div><span style='color: #6A5ACD' > [0.7,0.87)</span></div>";
+    contents+=" <div  style='clear: both;'><div style='height:19px;background-color:#FF9742;width: 64px;float: left;'> </div><span style='color: #6A5ACD' > [0.87,0.91)</span></div>";
+    contents+=" <div  style='clear: both;'><div style='height:19px;background-color:#ffd700;width: 64px;float: left;'> </div><span style='color: #6A5ACD' > [0.91,0.95)</span></div>";
+    contents+=" <div  style='clear: both;'><div style='height:19px;background-color:#00FF00;width: 64px;float: left;'> </div><span style='color: #6A5ACD' > [0.95,1] </span></div></div>";
+
+    // layer.closeAll();
+    // layer.open({
+    //     type: 1,
+    //     offset: ["60%", "2%"],  //位置
+    //     area: ['130px', '179px'], //图层大小
+    //     title: "坡度分析"
+    //     ,
+    //     content:contents
+    //     ,
+    //     btnAlign: 'c' //按钮居中
+    //     ,
+    //     shade: 0 //不显示遮罩
+    //     ,
+    //     cancel: function(index) {
+    //         layer.close(index);
+    //     }
+    // });
+
+    /************************************坡度破分析  */
+    // drawSlopePolygon(120.53326043368372, 36.19986679783925, 126.73770323941999,
+    //     120.50887514217943, 36.16885655055932, 83.66147935345376,
+    //     120.54019313232848, 36.144431210241976, 288.0187966576371,
+    //     120.56514399805944, 36.186951306803834, 211.60444639300655);
+
+//绘制小矩形面 四个经纬度的点，z值高度可以忽略 如：113.xx  ,37.xx,0 ,113.xx,37.xx,0
+    /*function drawSlopePolygon(startx1, starty1, startz1, startx2, starty2, startz2, startx3, starty3, startz3, startx4, starty4, startz4) {
+
+        //高度z全为0
+        var count = 100;
+        var slopelineposition = [];
+        var hireacys = [];
+        var hireacysdistance = []
+        for (j = 0; j < 100; j++) {
+            for (var i = 0; i < 100; i++) {
+                var hireacy = [] ;
+                //分割成小面，切分经纬度
+                hireacy.push(new Cesium.Cartesian3(startx1 + (startx2 - startx1) / count * i + (startx4 + (startx3 - startx4) / count * (i) - startx1 - (startx2 - startx1) / count * i) / count * j,
+                    starty1 + (starty2 - starty1) / count * i + (starty4 + (starty3 - starty4) / count * (i) - starty1 - (starty2 - starty1) / count * i) / count * j,
+                    startz1 + (startz2 - startz1) / count * i + (startz4 + (startz3 - startz4) / count * (i) - startz1 - (startz2 - startz1) / count * i) / count * j))
+                hireacy.push(new Cesium.Cartesian3(startx1 + (startx2 - startx1) / count * (i + 1) + (startx4 + (startx3 - startx4) / count * (i + 1) - startx1 - (startx2 - startx1) / count * (i + 1)) / count * j,
+                    starty1 + (starty2 - starty1) / count * (i + 1) + (starty4 + (starty3 - starty4) / count * (i + 1) - starty1 - (starty2 - starty1) / count * (i + 1)) / count * j,
+                    startz1 + (startz2 - startz1) / count * (i + 1) + (startz4 + (startz3 - startz4) / count * (i + 1) - startz1 - (startz2 - startz1) / count * (i + 1)) / count * j))
+                hireacy.push(new Cesium.Cartesian3(startx4 + (startx3 - startx4) / count * (i + 1) - (startx4 + (startx3 - startx4) / count * (i + 1) - startx1 - (startx2 - startx1) / count * (i + 1)) / count * (count - 1 - j),
+                    starty4 + (starty3 - starty4) / count * (i + 1) - (starty4 + (starty3 - starty4) / count * (i + 1) - starty1 - (starty2 - starty1) / count * (i + 1)) / count * (count - 1 - j),
+                    startz4 + (startz3 - startz4) / count * (i + 1) - (startz4 + (startz3 - startz4) / count * (i + 1) - startz1 - (startz2 - startz1) / count * (i + 1)) / count * (count - 1 - j)))
+                hireacy.push(new Cesium.Cartesian3(startx4 + (startx3 - startx4) / count * i - (startx4 + (startx3 - startx4) / count * (i) - startx1 - (startx2 - startx1) / count * i) / count * (count - 1 - j),
+                    starty4 + (starty3 - starty4) / count * i - (starty4 + (starty3 - starty4) / count * (i) - starty1 - (starty2 - starty1) / count * i) / count * (count - 1 - j),
+                    startz4 + (startz3 - startz4) / count * i - (startz4 + (startz3 - startz4) / count * (i) - startz1 - (startz2 - startz1) / count * i) / count * (count - 1 - j)))
+                hireacys.push(hireacy);
+                //取出面的8个点坐标，拿点坐标去求高度值
+                slopelineposition.push(Cesium.Cartographic.fromDegrees(hireacy[0].x,hireacy[0].y));
+                slopelineposition.push(Cesium.Cartographic.fromDegrees((hireacy[0].x+hireacy[1].x)/2,(hireacy[0].y+hireacy[1].y)/2));
+                slopelineposition.push(Cesium.Cartographic.fromDegrees(hireacy[1].x,hireacy[1].y));
+                slopelineposition.push(Cesium.Cartographic.fromDegrees((hireacy[1].x+hireacy[2].x)/2,(hireacy[1].y+hireacy[2].y)/2));
+                slopelineposition.push(Cesium.Cartographic.fromDegrees(hireacy[2].x,hireacy[2].y));
+                slopelineposition.push(Cesium.Cartographic.fromDegrees((hireacy[2].x+hireacy[3].x)/2,(hireacy[2].y+hireacy[3].y)/2));
+                slopelineposition.push(Cesium.Cartographic.fromDegrees(hireacy[3].x,hireacy[3].y));
+                slopelineposition.push(Cesium.Cartographic.fromDegrees((hireacy[3].x+hireacy[0].x)/2,(hireacy[3].y+hireacy[0].y)/2));
+
+            }
+        }
+        var promise = Cesium.sampleTerrainMostDetailed(terrainProvider, slopelineposition);
+        Cesium.when(promise,
+            function(updatedPositions) {
+                //拿到所有的高度数据
+                var heighmm = [];
+                var m = 0
+                //计算坡度比的次数
+                var countcolor1=0;
+                var countcolor2=0;
+                var countcolor3=0;
+                var countcolor4=0;
+                var countcolor5=0;
+                var countcolor6=0;
+                var countcolor7=0;
+                for (var k = 0; k < updatedPositions.length / 8; k++) {
+                    //第一个点与第五个点的坡度
+                    var slope1=(updatedPositions[m].height-updatedPositions[m+4].height)/(Cesium.Cartesian3.distance(
+                        Cesium.Cartesian3.fromDegrees(updatedPositions[m].latitude, updatedPositions[m].longitude,updatedPositions[m].height ),
+                        Cesium.Cartesian3.fromDegrees(updatedPositions[m+4].latitude, updatedPositions[m+4].longitude,updatedPositions[m+4].height)))
+                    //第二个点与第六个点的坡度
+                    var slope2=(updatedPositions[m+1].height-updatedPositions[m+5].height)/(Cesium.Cartesian3.distance(
+                        Cesium.Cartesian3.fromDegrees(updatedPositions[m+1].latitude, updatedPositions[m+1].longitude, updatedPositions[m+1].height),
+                        Cesium.Cartesian3.fromDegrees(updatedPositions[m+5].latitude, updatedPositions[m+5].longitude, updatedPositions[m+5].height)))
+                    //第三个点与第七个点的坡度
+                    var slope3=(updatedPositions[m+2].height-updatedPositions[m+6].height)/(Cesium.Cartesian3.distance(
+                        Cesium.Cartesian3.fromDegrees(updatedPositions[m+2].latitude, updatedPositions[m+2].longitude, updatedPositions[m+2].height),
+                        Cesium.Cartesian3.fromDegrees(updatedPositions[m+6].latitude, updatedPositions[m+6].longitude, updatedPositions[m+6].height)))
+                    //第四个点与第八个点的坡度
+                    var slope4=(updatedPositions[m+3].height-updatedPositions[m+7].height)/(Cesium.Cartesian3.distance(
+                        Cesium.Cartesian3.fromDegrees(updatedPositions[m+3].latitude, updatedPositions[m+3].longitude, updatedPositions[m+3].height),
+                        Cesium.Cartesian3.fromDegrees(updatedPositions[m+7].latitude, updatedPositions[m+7].longitude, updatedPositions[m+7].height)))
+                    // console.log("slope1:"+slope1+";slope2:"+slope2+";slope3:"+slope3+";slope4:"+slope4);
+                    var arrposition=[Math.abs(slope1) ,Math.abs(slope2),Math.abs(slope3),Math.abs(slope4)];//取绝对值
+                    arrposition.sort();
+                    var slope= arrposition[3]; // 拿到最大的坡度值
+                    var lineposition=[];//画方向线的坐标
+                    if(slope==Math.abs(slope1)){
+                        if(slope1>0){
+                            lineposition.push( Cesium.Math.toDegrees(updatedPositions[m].longitude),Cesium.Math.toDegrees(updatedPositions[m].latitude),
+                                Cesium.Math.toDegrees(updatedPositions[m+4].longitude),Cesium.Math.toDegrees(updatedPositions[m+4].latitude));
+                        }else{
+                            lineposition.push(
+                                Cesium.Math.toDegrees(updatedPositions[m+4].longitude),Cesium.Math.toDegrees(updatedPositions[m+4].latitude),
+                                Cesium.Math.toDegrees(updatedPositions[m].longitude),Cesium.Math.toDegrees(updatedPositions[m].latitude));
+
+                        }
+                    }else if(slope==Math.abs(slope2)){
+                        if(slope2>0){
+                            lineposition.push( Cesium.Math.toDegrees(updatedPositions[m+1].longitude),Cesium.Math.toDegrees(updatedPositions[m+1].latitude),
+                                Cesium.Math.toDegrees(updatedPositions[m+5].longitude),Cesium.Math.toDegrees(updatedPositions[m+5].latitude));
+                        }else{
+                            lineposition.push(
+                                Cesium.Math.toDegrees(updatedPositions[m+5].longitude),Cesium.Math.toDegrees(updatedPositions[m+5].latitude),
+                                Cesium.Math.toDegrees(updatedPositions[m+1].longitude),Cesium.Math.toDegrees(updatedPositions[m+1].latitude));
+                        }
+                    }else if(slope==Math.abs(slope3)){
+                        if(slope3>0){
+                            lineposition.push( Cesium.Math.toDegrees(updatedPositions[m+2].longitude),Cesium.Math.toDegrees(updatedPositions[m+2].latitude),
+                                Cesium.Math.toDegrees(updatedPositions[m+6].longitude),Cesium.Math.toDegrees(updatedPositions[m+6].latitude));
+                        }else{
+                            lineposition.push(
+                                Cesium.Math.toDegrees(updatedPositions[m+6].longitude),Cesium.Math.toDegrees(updatedPositions[m+6].latitude),
+                                Cesium.Math.toDegrees(updatedPositions[m+2].longitude),Cesium.Math.toDegrees(updatedPositions[m+2].latitude));
+                        }
+                    }else if(slope==Math.abs(slope4)){
+                        if(slope4>0){
+                            lineposition.push( Cesium.Math.toDegrees(updatedPositions[m+3].longitude),Cesium.Math.toDegrees(updatedPositions[m+3].latitude),
+                                Cesium.Math.toDegrees(updatedPositions[m+7].longitude),Cesium.Math.toDegrees(updatedPositions[m+7].latitude));
+                        }else{
+                            lineposition.push(
+                                Cesium.Math.toDegrees(updatedPositions[m+7].longitude),Cesium.Math.toDegrees(updatedPositions[m+7].latitude),
+                                Cesium.Math.toDegrees(updatedPositions[m+3].longitude),Cesium.Math.toDegrees(updatedPositions[m+3].latitude));
+                        }
+                    }
+                    slope=  (Math.abs(slope1) +Math.abs(slope2)+Math.abs(slope3)+Math.abs(slope4))/4; //四个坡度值大小有的差值特别大，这里取的平均值用来配置颜色
+                    // console.log(slope);
+                    var slopecolor;
+                    if (0 <= slope && slope < 0.29) {
+                        slopecolor = '#000000'
+                        countcolor1++;
+                    } else if (0.29 <= slope && slope < 0.5) {
+                        slopecolor = '#2747E0'
+                        countcolor2++;
+                    } else if (0.5 <= slope && slope < Math.sqrt(2) / 2) {
+                        slopecolor = '#D33B7D'
+                        countcolor3++;
+                    } else if (Math.sqrt(2) / 2 <= slope && slope < 0.87) {
+                        slopecolor = '#D33038'
+                        countcolor4++;
+                    } else if (0.87 <= slope && slope < 0.91) {
+                        slopecolor = '#FF9742'
+                        countcolor5++;
+                    } else if (0.91 <= slope && slope < 0.95) {
+                        slopecolor = '#ffd700'
+                        countcolor6++;
+                    } else  {
+                        slopecolor = '#ffffff'
+                        countcolor7++;
+                    }
+                    viewer.entities.add({
+                            type:'drawSloperectange',
+                            rectangle: {
+                                coordinates:  Cesium.Rectangle.fromDegrees(
+                                    Cesium.Math.toDegrees(updatedPositions[m].longitude), Cesium.Math.toDegrees(updatedPositions[m].latitude),
+                                    Cesium.Math.toDegrees(updatedPositions[m+4].longitude),Cesium.Math.toDegrees(updatedPositions[m+4].latitude))
+                                ,
+                                material:  Cesium.Color.fromCssColorString(slopecolor)
+
+                            },
+                            polyline: {
+                                clampToGround: true,
+                                positions:  Cesium.Cartesian3.fromDegreesArray(lineposition),
+                                material: Cesium.Color.fromCssColorString(slopecolor),//new Cesium.PolylineArrowMaterialProperty(Cesium.Color.fromCssColorString("#ff9090")),// Cesium.Color.BLUE.withAlpha(0.5) ,
+                                width: 4,
+                                distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, updatedPositions[m+4].height+4500)
+                            },
+
+                        }
+                    );
+                    m += 8;
+                }
+                var contents="<div class='slope_layer'><div> <div style='height:19px;background-color:#000000; width: 64px;float: left;'> </div><span >"+(countcolor1/(updatedPositions.length / 8)*100).toFixed(2)+"% (<0.29)</span></div>";
+                contents+=" <div  style='clear: both;'><div style='height:19px;background-color:#2747E0 ; width: 64px;float: left;'></div><span >  "+(countcolor2/(updatedPositions.length / 8)*100).toFixed(2)+"%(<0.5)</span></div>";
+                contents+="<div   style='clear: both;'><div style='height:19px;background-color:#D33B7D;width: 64px;float: left;'> </div><span >"+(countcolor3/(updatedPositions.length / 8)*100).toFixed(2)+"%(<0.7)</span></div>";
+                contents+=" <div  style='clear: both;'><div style='height:19px;background-color:#D33038;width: 64px;float: left;'> </div><span >"+(countcolor4/(updatedPositions.length / 8)*100).toFixed(2)+"%(<0.87)</span></div>";
+                contents+=" <div  style='clear: both;'><div style='height:19px;background-color:#FF9742;width: 64px;float: left;'> </div><span > "+(countcolor5/(updatedPositions.length / 8)*100).toFixed(2)+"%(<0.91)</span></div>";
+                contents+=" <div  style='clear: both;'><div style='height:19px;background-color:#ffd700;width: 64px;float: left;'> </div><span >"+(countcolor6/(updatedPositions.length / 8)*100).toFixed(2)+"%(<0.95)</span></div>";
+                contents+=" <div  style='clear: both;'><div style='height:19px;background-color:#ffffff;width: 64px;float: left;'> </div><span > "+(countcolor7/(updatedPositions.length / 8)*100).toFixed(2)+"%(<1)</span></div></div>";
+
+                layer.closeAll();
+
+
+                layer.open({
+                    type: 1,
+                    offset: ["60%", "2%"],  //位置
+                    area: ['200px', '179px'], //图层大小
+                    title: "坡度分析信息"
+                    ,
+                    content:contents
+                    ,
+                    btnAlign: 'c' //按钮居中
+                    ,
+                    shade: 0 //不显示遮罩
+                    ,
+                    cancel: function(index) {
+                        layer.close(index);
+                    }
+                });
+
+            })
+
+    } */
+
+
+</script>
+</body>
+</html>

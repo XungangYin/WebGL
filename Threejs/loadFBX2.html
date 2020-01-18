@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>three.js - FBX loader - replace texture at runtime</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0px;
+            overflow: hidden;
+        }
+        #info {
+            color: #fff;
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display:block;
+        }
+        #replaceTexture {
+            margin-top: 10px;
+        }
+        #info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
+    </style>
+</head>
+
+<body>
+<div id="info">
+    <input type="button" id="replaceTexture" value="Replace texture" />
+</div>
+
+<script src="js/three.js"></script>
+
+<script src="js/libs/inflate.min.js"></script>
+<script src="js/loaders/FBXLoader.js"></script>
+<script src="js/loaders/TGALoader.js"></script>
+
+<script src="js/controls/OrbitControls.js"></script>
+
+<script src="js/Detector.js"></script>
+<script src="js/libs/stats.min.js"></script>
+
+<script>
+
+    if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+    var container, stats, controls;
+    var camera, scene, renderer, light;
+    var mesh;
+   // var action;
+
+    var clock = new THREE.Clock();
+
+    var mixers = [];
+
+    init();
+
+    function init() {
+
+        container = document.createElement( 'div' );
+        document.body.appendChild( container );
+
+        camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+
+        scene = new THREE.Scene();
+
+        // grid
+        var gridHelper = new THREE.GridHelper( 28, 28, 0x303030, 0x303030 );
+        gridHelper.position.set( 0, - 0.04, 0 );
+        scene.add( gridHelper );
+
+        // stats
+
+        // model
+        var manager = new THREE.LoadingManager();
+        manager.onProgress = function( item, loaded, total ) {
+
+            console.log( item, loaded, total );
+
+        };
+
+        var onProgress = function( xhr ) {
+
+            if ( xhr.lengthComputable ) {
+
+                var percentComplete = xhr.loaded / xhr.total * 100;
+                console.log( Math.round( percentComplete, 2 ) + '% downloaded' );
+
+            }
+
+        };
+
+        var onError = function( xhr ) {
+        };
+
+
+
+        var loader = new THREE.FBXLoader(manager);
+       // var loader = new THREE.FBXLoader();
+       // var loader = new THREE.FBXLoader();
+       // loader.load( './nex-html/models/fire/xiaofangqicai/FireCar/Firetruck_JP18.FBX', function ( object ) {
+        loader.load( './nex-html/models/fire/zhandouyuan03.FBX', function ( object ) {
+      //  loader.load( './models/fbx/test/man_all_action.FBX', function ( object ) {
+        //loader.load( 'models/fbx/FBX 2013/man_test.FBX', function( object ) {
+        // loader.load( 'models/fbx/Xray.fbx', function( object ) {
+            mesh = object;
+            mesh.mixer = new THREE.AnimationMixer(mesh);
+            mixers.push(mesh.mixer);
+
+            mesh.scale.multiplyScalar(5); //模型缩放
+            var action = mesh.mixer.clipAction(mesh.animations[1]);
+            action.play();
+
+            for(var i = 0;i < 6;i++){
+               // mesh.children[i].visible = false;
+            }
+
+            //action.stop();
+            scene.add(mesh);
+
+
+        }, onProgress, onError );
+
+
+        renderer = new THREE.WebGLRenderer();
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setClearColor( 0x000000 );
+        container.appendChild( renderer.domElement );
+
+        // controls, camera
+        controls = new THREE.OrbitControls( camera, renderer.domElement );
+        controls.target.set( 0, 12, 0 );
+        camera.position.set( 2, 18, 28 );
+        controls.update();
+
+        window.addEventListener( 'resize', onWindowResize, false );
+
+        light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+        light.position.set(0, 1, 0);
+        scene.add(light);
+
+        light = new THREE.DirectionalLight(0xffffff, 1.0);
+        light.position.set(0, 1, 0);
+        scene.add(light);
+
+        // interaction
+
+        var button = document.getElementById("replaceTexture");
+        button.addEventListener("click", onReplaceTexture)
+
+
+        animate();
+
+    }
+
+    //
+
+    function onReplaceTexture() {
+        //var textureLoader = new THREE.TextureLoader();
+        var textureLoader = new THREE.TGALoader();
+        //textureLoader.setCrossOrigin("anonymous");
+        //var texture = textureLoader.load("https://picsum.photos/256");
+        //var texture = textureLoader.load("models/fbx/children/boy02.tga");
+      //  var texture = textureLoader.load("models/fbx/children/girl02.tga");
+
+        // textureLoader.load("https://unsplash.it/2048", function (texture) {
+        textureLoader.load("models/fbx/children/girl02.tga", function (texture) {
+            // mesh is a group contains multiple sub-objects. Traverse and apply texture to all.
+            mesh.traverse(function (child) {
+                if (child instanceof THREE.Mesh) {
+
+                    // apply texture
+                    child.material.map = texture
+                    child.material.needsUpdate = true;
+                }
+            });
+
+        });
+    }
+
+    //
+
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+    }
+
+    //
+
+    var num = 0;
+
+    function animate() {
+
+        requestAnimationFrame( animate );
+
+       // if (num<1000){
+            if ( mixers.length > 0 ) {
+
+                for ( var i = 0; i < mixers.length; i ++ ) {
+
+                    mixers[ i ].update(  clock.getDelta());
+                   // var a=  mixers[ i ].getRoot();
+
+                }
+
+             }
+             num++;
+          //  mesh.mixer.clipAction(mesh.animations[0]).stop();
+          //  mixers[ i ].getMixer().stop();
+        //}
+
+
+        render();
+
+    }
+
+    function render() {
+
+        renderer.render( scene, camera );
+
+    }
+
+</script>
+
+</body>
+</html>

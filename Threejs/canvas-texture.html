@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Canvas-texture</title>
+
+    <style>
+        body {
+            margin: 10px;
+            background-color: aqua;
+            overflow: hidden;
+        }
+    </style>
+
+    <script src = "js/three.js"></script>
+    <!--导入性能监视器 -->
+    <script src = "js/Stats.js"></script>
+</head>
+
+
+<body onload="start();">
+<script src = "js/clock.js"></script>
+<script src = "js/libs/dat.gui.min.js"></script>
+<script src = "js/controls/OrbitControls.js"></script>
+<script src = "js/controls/TrackballControls.js"></script>
+
+
+<canvas id  = "clock" width="200" height="200">
+
+
+<script>
+    var camera,scene,renderer,controls;
+    var mesh;
+    var texture;
+    var stats;
+    var gui;
+
+    function start() {
+        clock();
+        init();
+        animation();
+    }
+
+
+    function init() {
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth,window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        camera = new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,1,1000);
+        camera.position.z = 400;
+
+       // controls = new THREE.TrackballControls(camera); //轨迹球漫游器
+        controls = new THREE.OrbitControls( camera,renderer.domElement );
+        scene = new THREE.Scene();
+
+        var geometry = new THREE.CubeGeometry(150,150,150);
+        texture = new THREE.Texture(this.canvas);  //???哪里来的?
+
+        var material = new THREE.MeshBasicMaterial({map:texture});
+        texture.needsUpdate = true;
+
+        mesh = new THREE.Mesh(geometry,material);
+
+        scene.add(mesh);
+        window.addEventListener('resize',onWindowResize,false);//???
+
+        //帧速
+        stats = new Stats();
+        stats.setMode(1);
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.left = '10px';
+        stats.domElement.style.top = '20px';
+        document.body.appendChild(stats.domElement);
+        initGui();
+
+    }
+
+    function initGui() {
+        gui = {
+            x:0
+        }
+
+        var datGui = new dat.GUI();
+        datGui.add(gui,"x",-1,1,0.001);
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth/window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth,window.innerHeight);
+    }
+
+    function animation() {
+        texture.needsUpdate  =true;
+        /*mesh.rotation.y -= 0.01;
+        mesh.rotation.x += 0.01;
+        mesh.rotation.z -= 0.01;*/
+        mesh.rotation.x += gui.x;
+        requestAnimationFrame(animation);
+        renderer.render(scene,camera);
+        this.stats.update();
+    }
+</script>
+</body>
+</html>
+

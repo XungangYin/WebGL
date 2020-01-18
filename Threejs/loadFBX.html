@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>three.js webgl - FBX loader</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0px;
+            overflow: hidden;
+        }
+        #info {
+            color: #fff;
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display:block;
+        }
+        #info a {
+            color: #046;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+<div id="info">
+    <a href="http://threejs.org" target="_blank" rel="noopener">three.js</a> - FBXLoader<br />
+    Character and animation from <a href="https://www.mixamo.com/" target="_blank" rel="noopener">Mixamo</a>
+</div>
+
+    <div>
+        <input type ="button" id = "replaceTexture" value="ReplaceTextre">
+    </div>
+
+<script src="js/three.js"></script>
+
+<script src="js/libs/inflate.min.js"></script>
+<script src="js/loaders/FBXLoader.js"></script>
+<script src="js/loaders/TGALoader.js"></script>
+
+<script src="js/controls/OrbitControls.js"></script>
+
+<script src="js/Detector.js"></script>
+<script src="js/libs/stats.min.js"></script>
+
+<script>
+
+    if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+    var container, stats, controls;
+    var camera, scene, renderer, light;
+    var mesh;
+
+    var clock = new THREE.Clock();
+
+    var mixers = [];
+
+    init();
+    animate();
+
+    function init() {
+
+        container = document.createElement( 'div' );
+        document.body.appendChild( container );
+
+        camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+        camera.position.set( 100, 200, 300 ); //骨骼动画
+        //camera.position.set( 0, 0, 30);//qing wa
+
+        controls = new THREE.OrbitControls( camera );
+       // controls.target.set( 0, 100, 0 );
+        controls.maxPolarAngle = Math.PI*0.5;
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color( 0xa0a0a0 );
+        scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+
+        light = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+        light.position.set( 0, 200, 0 );
+        scene.add( light );
+
+        light = new THREE.DirectionalLight( 0xffffff );
+        light.position.set( 0, 200, 100 );
+        light.castShadow = true;
+        light.shadow.camera.top = 180;
+        light.shadow.camera.bottom = -100;
+        light.shadow.camera.left = -120;
+        light.shadow.camera.right = 120;
+        scene.add( light );
+
+        // scene.add( new THREE.CameraHelper( light.shadow.camera ) );
+
+        // ground
+        var mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
+        mesh.rotation.x = - Math.PI / 2;
+        mesh.receiveShadow = true;
+        scene.add( mesh );
+
+        var grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
+        grid.material.opacity = 0.2;
+        grid.material.transparent = true;
+        scene.add( grid );
+
+        // model
+        var manager = new THREE.LoadingManager();
+        manager.onProgress = function (item, loaded, total) {
+            console.log(item,loaded,total);
+        };
+        //texture
+        var textureLoader = new THREE.TGALoader();
+        //var texture = textureLoader.load("https://picsum.photos/256");
+        //var texture = textureLoader.load("models/fbx/children/boy02.tga");
+        var texture = textureLoader.load("models/fbx/children/girl02.tga");
+
+        var loader = new THREE.FBXLoader();
+        //loader.load( 'models/fbx/Samba2.fbx', function ( object ) {
+       // loader.load( 'models/fbx/children/boy02.FBX', function ( object ) {
+        loader.load( 'models/fbx/Samba Dancing.fbx', function ( object ){
+       //  loader.load( 'models/fbx/Xray.fbx', function ( object ){
+            mesh= object;
+            mesh.mixer = new THREE.AnimationMixer( mesh );   //场景中特定对象的动画播放器
+            mixers.push( mesh.mixer );
+
+            var action = mesh.mixer.clipAction( mesh.animations[ 0 ] );  //返回可以控制动画的对象
+            action.play(); //启动动画动作
+
+           // mesh.rotation.x = Math.PI/2;
+           //mesh.scale.multiplyScalar(.1); //模型缩放
+
+
+           mesh.traverse( function ( child ) {  //设置模型的每个部位都可以投影
+               if (child instanceof THREE.Mesh) {
+
+                   // apply texture
+                   child.material.map = texture
+                   child.material.needsUpdate = true;
+               }
+               //  if ( child.isMesh ) {
+               //
+               //      child.material.map = texture
+               //      child.material.needsUpdate = true;
+               //      child.castShadow = true;
+               //      child.receiveShadow = true;
+               //
+               //  }
+
+            } );
+
+            scene.add( mesh );
+
+        } );
+
+        // loader.load( 'models/fbx/qingwa.FBX', function ( mesh ) {
+        //     scene.add( object );
+        //
+        // } );
+
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.shadowMap.enabled = true;
+        container.appendChild( renderer.domElement );
+
+        window.addEventListener( 'resize', onWindowResize, false );
+
+        // stats
+        stats = new Stats();
+       // container.appendChild( stats.dom );
+
+
+        var button = document.getElementById("replaceTexture");
+        button.addEventListener("click",onReplaceTexture);
+
+    }
+      function onReplaceTexture(){
+          var textureLoader = new THREE.TextureLoader();
+          textureLoader.setCrossOrigin("anonymous");
+          textureLoader.load("https://unsplash.it/256", function (texture) {
+
+              // mesh is a group contains multiple sub-objects. Traverse and apply texture to all.
+              mesh.traverse(function (child) {
+                  if (child instanceof THREE.Mesh) {
+
+                      // apply texture
+                      child.material.map = texture
+                      child.material.needsUpdate = true;
+                  }
+              });
+
+          });
+      }
+
+
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+    }
+
+    //
+
+    function animate() {
+
+        requestAnimationFrame( animate );
+
+        if ( mixers.length > 0 ) {
+
+            for ( var i = 0; i < mixers.length; i ++ ) {
+
+                mixers[ i ].update( clock.getDelta() );
+
+            }
+
+        }
+
+        renderer.render( scene, camera );
+
+       // stats.update();
+
+    }
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>threejs_4 </title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<style>body { margin: 0px; overflow: hidden; }</style>
+<link type="text/css" rel="stylesheet" href="stylesheet/3dhop.css"/> <!--链接样式表sst的通用方式 -->
+
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.js"></script>-->
+<script src="../js/three.js"></script>
+
+<script src="../js/libs/CanvasRenderer.js"></script>
+<!--JQUERY-->
+<script src="js/jquery.js"></script>
+<script src="js/TrackballControls.js"></script>
+<script src="js/nexus.js"></script>
+<script src="js/nexus_three.js"></script>
+<script src = "../js/libs/stats.min.js"></script>
+
+<script src="../js/libs/inflate.min.js"></script>
+<script src="../js/loaders/TGALoader_dev.js"></script>
+<script src="../js/loaders/FBXLoader.js"></script>
+<script src="../js/loaders/GLTFLoader.js"></script>
+<script src = "js/init.js"></script>
+
+
+</head>
+
+<body>
+<div id="loading" style="position:absolute; left: 300px;top: 400px;width: 100px;height: 200px;color: #ff0000;">
+    载入中，请稍等.....
+</div>
+
+
+<div id="container"></div>
+<!--<canvas id="container"></canvas>-->
+<div id="event" class ="3DModel" onmousedown="if(event.preventDefault) event.preventDefault() "></div>
+<div id="toolbar">
+    <img id="home" 		 	title="Home" 					src="img/dark/home.png"/><br/>
+    <img id="zoomin" 	    title="Active action"					src="img/dark/zoomin.png"/><br/>
+    <img id="light_on"      title="Disable Light Control"   src="img/dark/lightcontrol_on.png" style="position:absolute; visibility:hidden;"/>
+    <img id="light"      	title="Enable Light Control"    src="img/dark/lightcontrol.png"    /><br/>
+    <img id="measure_on"	title="Disable Measure tool"	src="img/dark/measure_on.png" style="..."/>
+    <img id="measure"		title="Enable Measure tool"		src="img/dark/measure.png"/><br/>
+
+</div>
+
+<div id="measure-box" class="output-box">Measured length<hr/><span id="measure-output" class="output-text" onmousedown="event.stopPropagation()">0.0</span></div>
+
+<div id = "stats" align="right" style="margin-top: 0px;"></div>
+
+</body>
+
+<script src = "project2.js"></script>
+
+<script>
+    function closeLoad(){
+        document.getElementById("loading").style.visibility = "hidden";
+    }
+
+    //document.addEventListener("mousedown",onDocumentMouseDown,false); //关闭对html事件的相应
+    document.addEventListener("touchstart",onDocumentTouchStart,false);
+    window.addEventListener( 'resize', onWindowResize, false );
+    init3D();
+    initRender();
+    initCameraAndControl();
+    initScene();
+
+    //鼠标拖拽框选
+   // addTouch();
+    animate();
+    //   $('#measure-output').html(measure.toFixed(2) + " mm");
+   closeLoad();
+</script>
+
+</html>

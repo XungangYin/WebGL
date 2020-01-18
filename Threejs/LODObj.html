@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="loadOBJLOD " content="width=device-width,user-scalable-no,minimum-scale=1.0,maximum-scale=1.0">
+    <title>loadOBJLOD</title>
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0px;
+            overflow: hidden;
+        }
+        #info{
+            color: #f00;
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display: block;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id = "info">
+    OBJLoader test
+</div>
+
+<div id="loading" style="position:absolute; left: 300px;top: 400px;width: 100px;height: 200px;color: #ff0000;">
+    载入中.....
+    <img id = "load" src="nex-html/img/5-121204193R1-50.gif">
+</div>
+
+<script src = "js/three.js"></script>
+<script src = "js/loaders/OBJLoader.js"></script>
+<script src = "js/controls/OrbitControls.js"></script>
+<script src = "js/controls/TrackballControls.js"></script>
+<script src = "js/libs/stats.min.js"></script>
+<script src = "js/libs/dat.gui.min.js"></script>
+<script src = "quadtree.js"></script>
+<script src = "js/utils/GeometryUtils.js"></script>
+<script src = "js/CSS2DRenderer.js"></script>
+
+<script>
+    var container;
+    var camera,scene,renderer,stats;
+    var mouseX = 0,mouseY = 0;
+    var windowHalfX = window.innerWidth/2;
+    var windowHalfY = window.innerHeight/2;
+    var controls;
+    var lod,textureLoader,loader,onProgress,onError;
+    var group0 = new THREE.Object3D();
+    var group1 = new THREE.Object3D();
+    var  labelRenderer;
+    var mesh;
+    var loading = true;
+
+    var controlElemets = {
+        cameraZ:5
+    };
+
+    function closeLoad(){
+        document.getElementById("loading").style.visibility = "hidden";
+    }
+    //垂直于Y轴的四边形
+    var quad = {
+        p0:{x:2096,y:-125,z:-1470},   //右上角
+        p1:{x:-1735.0,y:-125,z:-1470},   //左上角
+        p2:{x:-1735,y:-125,z:3426},   //左下角
+        p3:{x:2096,y:-125,z:3426},   //右下角
+        center:{x:180,y:-125.0,z:978},
+        obj:THREE.Object3D
+    };
+    var root = new Quadtree(quad,1); //四叉树根节点
+   // root.insert(quad);
+
+    init();
+
+    animate();
+
+    function init() {
+        container = document.createElement("div");
+        document.body.appendChild(container);
+
+        renderer = new THREE.WebGLRenderer();
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth,window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        camera  = new THREE.PerspectiveCamera(45,window.innerWidth/window.innerHeight,100,20000);
+        //camera.position.y= 30;
+        camera.position.set(0,5000,0.5);
+        camera.lookAt({x:0,y:0,z:0});
+
+        stats = new Stats();
+        container.appendChild(stats.dom);
+
+        //轨道漫游器:左键按住旋转,中建/滚轮缩放,右键拖拽
+        // controls = new THREE.OrbitControls( camera,renderer.domElement );  //漫游器
+        controls = new THREE.TrackballControls(camera); //轨迹球漫游器
+        //旋转速度
+        controls.rotateSpeed = 1.1;
+        //变焦速度
+        controls.zoomSpeed = 1.2;
+        //平移速度
+        controls.panSpeed = 0.8;
+        //是否不变焦
+        controls.noZoom = false;
+        //是否不平移
+        controls.noPan = false;
+        //可能是惯性 true没有惯性
+        controls.staticMoving = false;
+        //动态阻尼系数 就是灵敏度
+        controls.dynamicDampingFactor = 0.3;
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xFFFFFF); // 场景白色
+        var ambient = new THREE.AmbientLight(0x999999,0.4);
+        scene.add(ambient);
+
+        var light2 = new THREE.DirectionalLight( 0x777777, 1.0 );
+        light2.position.set( 0, 1, 0);
+        scene.add( light2 );
+     //   var pointLight = new THREE.PointLight(0xffffff,0.8);
+        // camera.add(pointLight);
+        scene.add(camera);
+
+        lod  = new THREE.LOD();
+        initLoader();
+
+
+        load1();
+     //   load0();
+      //  load2();
+      //  lod.addLevel(group0,4000);
+       // lod.addLevel(group1,3000);
+        lod.position.x = 0;
+        lod.position.y =  0;
+        lod.position.z = 0; //* ( 0.5 - Math.random() );
+        lod.updateMatrix();
+        lod.matrixAutoUpdate = false;
+       // scene.add(lod);
+
+        //   document.addEventListener('mousemove',onDocumentMouseMove,false);
+        window.addEventListener('resize',onWindowResize,false);
+
+        var helper = new THREE.AxesHelper(5000); //辅助坐标轴
+        scene.add(helper);
+
+
+        var  loaderfont = new THREE.FontLoader();
+
+        loaderfont.load( 'font/FangSong_Regular.json', function ( response ) {
+            //注意response 这内容比较关键，是否能加载中文就看这个变量了，这个变量里面的glyphs，默认的几种只有英文
+            var options = {
+                size: 30, //字号大小，一般为大写字母的高度
+                height: 10, //文字的厚度
+                weight: 'normal', //值为'normal'或'bold'，表示是否加粗
+                font: response, //字体，默认是'helvetiker'，需对应引用的字体文件
+                style: 'normal', //值为'normal'或'italics'，表示是否斜体
+                bevelThickness: 1, //倒角厚度
+                bevelSize: 1, //倒角宽度
+                curveSegments: 30,//弧线分段数，使得文字的曲线更加光滑
+                bevelEnabled: true, //布尔值，是否使用倒角，意为在边缘处斜切
+            };
+            ////创建一个三维对象的文本作为一个单一的对象 text输入的文字 options 文字设置
+            var textGeo = new THREE.TextGeometry( "天津理工大学", options);
+            textGeo.computeBoundingBox();
+            textGeo.computeVertexNormals();
+            var centerOffset = -0.5 * ( textGeo.boundingBox.max.x - textGeo.boundingBox.min.x );
+
+            var material = new THREE.MultiMaterial([
+                new THREE.MeshPhongMaterial( { color: 0xff0000, shading: THREE.FlatShading } ), // front
+                new THREE.MeshPhongMaterial( { color: 0x00ffff, shading: THREE.SmoothShading } ) // side
+            ]);
+            //新建mesh,加入
+            mesh = new THREE.Mesh( textGeo, material );
+            mesh.position.x = centerOffset;
+            mesh.position.y = 50;
+            mesh.position.z = 0;
+
+            mesh.rotation.x = 0;
+            mesh.rotation.y = Math.PI * 2;
+
+
+            var textDiv = document.createElement('div');
+            textDiv.className = 'label';
+            textDiv.textContent = '天津理工大学';
+            textDiv.style.marginTop = '-1em';
+            textDiv.style.color = 'rgb(255,0,0)';
+            var textLabel  = new THREE.CSS2DObject(textDiv);
+            textLabel.position.set(0,150,0);
+
+            mesh.add(textLabel);
+            scene.add( mesh );
+
+
+        } );
+
+
+        // var textDiv = document.createElement('div');
+        // textDiv.className = 'label';
+        // textDiv.textContent = '天津理工大学';
+        // textDiv.style.marginTop = '-1em';
+        //
+        // var textLabel  = new THREE.CSS2DObject(textDiv);
+        // textLabel.position.set(0,150,0);
+        // mesh.add(textLabel);
+
+
+        labelRenderer = new THREE.CSS2DRenderer();
+        labelRenderer.setSize( window.innerWidth, window.innerHeight );
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = 0;
+        container.appendChild( labelRenderer.domElement );
+
+        // var text1 = creatText(new THREE.TextGeometry("fghdf",{size:30}));
+        // text1.position.z = 1;
+        // text1.position.y = 5200;
+        // text1.position.x = 0;
+        //
+        // scene.add(text1);
+
+    }
+
+
+    function initLoader() {
+        //texture
+        /*
+        var manager = new THREE.LoadingManager();
+        manager.onProgress = function (item, loaded, total) {
+            console.log(item,loaded,total);
+        };
+
+        textureLoader = new THREE.TextureLoader(manager);
+        onProgress = function (xhr) {
+            if (xhr.lengthComputable) {
+                var percentComplete = xhr.loaded / xhr.total * 100;
+                console.log( Math.round(percentComplete, 2) + '% downloaded');
+            }
+        };
+        onError = function (xhr) {
+
+        }; */
+        //loader  = new THREE.OBJLoader(manager);
+        loader  = new THREE.OBJLoader();
+
+    }
+
+
+    function load0() {
+        var path = "models/obj/luoqing/0/";
+
+     //   for(var i = 0;i <1;i++){
+            loader.load(path+0+".obj",function (object) {
+                //lod.addLevel(object,3);
+                //group0.add(object);
+                var box = new THREE.BoundingBoxHelper(object);  //从创建一个object的边框包围盒，颜色默认
+                box.visible = true;
+
+                var bbox = new THREE.Box3().setFromObject(object);
+        //        scene.add(box);
+       //         group0.add(bbox);
+       //         group0.add(object);
+
+               // console.log(group0);
+                // scene.add(box);
+                //scene.add(group0);
+                var node = {
+                    p0:{x:2096,y:-125,z:-1470},   //右上角
+                    p1:{x:-1735.0,y:-125,z:-1470},   //左上角
+                    p2:{x:-1735,y:-125,z:3426},   //左下角
+                    p3:{x:2096,y:-125,z:3426},   //右下角
+                    center:{x:180,y:-125.0,z:978},
+                    obj:THREE.Object3D
+                };
+               // 先计算Y轴坐标点
+                let y = bbox.max.y+bbox.min.y;
+                y /= 2;
+                //计算四个点
+
+                node.p3 = bbox.max; node.p3.y = y; //右下
+                node.p1 = bbox.min; //左上
+                node.p0.y = y;node.p0.x = node.p3.x;node.p0.z = node.p1.z; //右上
+                node.p2.y = y;node.p2.x = node.p1.x;node.p2.z = node.p3.z;//左下
+
+                node.center = box.geometry.boundingSphere.center;
+                node.obj = object;
+                //scene.add(quad.obj);
+               // console.log( quad);
+                //console.log(object);
+                //console.log(box.geometry.boundingSphere.center);
+                //root  = new Quadtree(quad,1);
+                root.insert(node);
+
+            });
+       // }
+    }
+
+    /*function addObject(object) {
+        var box = new THREE.BoundingBoxHelper(object);  //从创建一个object的边框包围盒，颜色默认
+        box.visible = true;
+        var bbox = new THREE.Box3().setFromObject(object);
+        var node = {
+            p0:{x:0,y:-125,z:0},   //右上角
+            p1:{x:-0.0,y:-125,z:0},   //左上角
+            p2:{x:-0,y:-125,z:0},   //左下角
+            p3:{x:0,y:-125,z:0},   //右下角
+            center:{x:0,y:-0.0,z:0},
+            obj:THREE.Object3D
+        };
+        // 先计算Y轴坐标点
+        let y = bbox.max.y+bbox.min.y;
+        y /= 2;
+        //计算四个点
+
+        node.p3 = bbox.max; node.p3.y = y; //右下
+        node.p1 = bbox.min; //左上
+        node.p0.y = y;node.p0.x = node.p3.x;node.p0.z = node.p1.z; //右上
+        node.p2.y = y;node.p2.x = node.p1.x;node.p2.z = node.p3.z;//左下
+
+        node.center = box.geometry.boundingSphere.center;
+        node.obj = object;
+
+        //scene.add(node.obj);
+        root.insert(node);
+
+    } */
+    var cnt  =0;
+    function load1() {
+        var path = "models/obj/luoqing/2/1_";
+
+        for(var i = 0;i <16;i++){
+           // loader.load(path+i+".obj",addObject(object));
+            loader.load(path+i+".obj",function (object) {
+                //lod.addLevel(object,3);                  //这里是否可以插入四叉树结构中
+                 object.visible = true;
+                // group1.add(object);
+                //root.insert(object);
+
+                var box = new THREE.BoundingBoxHelper(object);  //从创建一个object的边框包围盒，颜色默认
+                box.visible = true;
+
+                var bbox = new THREE.Box3().setFromObject(object);
+                var node = {
+                    p0:{x:0,y:-125,z:0},   //右上角
+                    p1:{x:-0.0,y:-125,z:0},   //左上角
+                    p2:{x:-0,y:-125,z:0},   //左下角
+                    p3:{x:0,y:-125,z:0},   //右下角
+                    center:{x:0,y:-0.0,z:0},
+                    obj:THREE.Object3D
+                };
+                // 先计算Y轴坐标点
+                let y = bbox.max.y+bbox.min.y;
+                y /= 2;
+                //计算四个点
+
+                node.p3 = bbox.max; node.p3.y = y; //右下
+                node.p1 = bbox.min; //左上
+                node.p0.y = y;node.p0.x = node.p3.x;node.p0.z = node.p1.z; //右上
+                node.p2.y = y;node.p2.x = node.p1.x;node.p2.z = node.p3.z;//左下
+
+                node.center = box.geometry.boundingSphere.center;
+                node.obj = object;
+
+                //scene.add(node.obj);
+                root.insert(node);
+                cnt +=1;
+
+            });
+        }
+
+    }
+
+    //计算模型中心p1和cameraw的位置p2的距离。
+    function distToCamera(p1,p2) {
+        let dis = Math.pow((p1.x - p2.x ),2)+Math.pow((p1.y - p2.y ),2)+Math.pow((p1.z - p2.z ),2);
+        return Math.sqrt(dis);
+    }
+
+
+
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        labelRenderer.setSize( window.innerWidth, window.innerHeight  );
+    }
+
+    function onDocumentMouseMove( event ) {
+
+        mouseX = ( event.clientX - windowHalfX ) / 2;
+        mouseY = ( event.clientY - windowHalfY ) / 2;
+
+    }
+
+    function animate() {
+        render();
+        controls.update();
+        stats.update();
+        labelRenderer.render(scene,camera);
+        // camera.lookAt(scene.position);
+        requestAnimationFrame(animate);
+    }
+    function render() {
+        scene.updateMatrixWorld();
+        // scene.traverse( function ( object ) {
+        //
+        //     if ( object instanceof THREE.LOD ) {
+        //
+        //         object.update( camera );
+        //
+        //     }
+        //
+        // } );
+        if (cnt == 16){
+            if (loading) {
+                closeLoad();
+                loading = false;
+            }
+            var objarr = root.getAll();
+            for(var j = 0; j< 16;j++){
+                dis = distToCamera(objarr[j].center,camera.position);
+                if(dis < 6000)
+                    scene.add(objarr[j].obj);
+                else
+                    scene.remove(objarr[j].obj);
+            }
+
+        }
+        renderer.render(scene,camera);
+    }
+
+    function creatText(geom) {
+        // 创建法向量纹理
+        var meshMaterial = new THREE.MeshNormalMaterial({
+            flatShading: THREE.FlatShading,
+            transparent: true,
+            opacity: 0.9
+        });
+
+        //  创建一个线框纹理
+        var wireFrameMat = new THREE.MeshBasicMaterial();
+        wireFrameMat.wireframe = true;
+        // 创建模型
+        var mesh = THREE.SceneUtils.createMultiMaterialObject(geom, [meshMaterial, wireFrameMat]);
+        return mesh;
+    }
+
+
+
+
+
+</script>
+
+</body>
+</html>

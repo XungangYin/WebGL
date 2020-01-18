@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>threejs-2 </title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<style>body { margin: 0px; overflow: hidden; }</style>
+<link type="text/css" rel="stylesheet" href="stylesheet/3dhop.css"/> <!--链接样式表sst的通用方式 -->
+
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.js"></script>-->
+<script src="../js/three.js"></script>
+
+<script src="../js/libs/CanvasRenderer.js"></script>
+<!--JQUERY-->
+<script src="js/jquery.js"></script>
+<script src="js/TrackballControls.js"></script>
+<script src="js/nexus.js"></script>
+<script src="js/nexus_three.js"></script>
+<script src = "../js/libs/stats.min.js"></script>
+<script src = "../js/libs/dat.gui.min.js"></script>
+
+<script src="../js/libs/inflate.min.js"></script>
+<script src="../js/loaders/TGALoader_dev.js"></script>
+<script src="../js/loaders/FBXLoader.js"></script>
+
+<script src = "js/init.js"></script>
+<!--<script src = "js/spidergl.js"></script>-->
+
+</head>
+
+<body>
+<div id="container"></div>
+<!--<canvas id="container"></canvas>-->
+<div id="event" class ="3DModel" onmousedown="if(event.preventDefault) event.preventDefault() "></div>
+<div id="toolbar">
+    <img id="home" 		 	title="Home" 					src="img/dark/home.png"/><br/>
+    <img id="zoomin" 	    title="Zoom In"					src="img/dark/zoomin.png"/><br/>
+    <img id="light_on"      title="Disable Light Control"   src="img/dark/lightcontrol_on.png" style="position:absolute; visibility:hidden;"/>
+    <img id="light"      	title="Enable Light Control"    src="img/dark/lightcontrol.png"    /><br/>
+    <img id="measure_on"	title="Disable Measure tool"	src="img/dark/measure_on.png" style="..."/>
+    <img id="measure"		title="Enable Measure tool"		src="img/dark/measure.png"/><br/>
+
+</div>
+
+<div id="measure-box" class="output-box">Measured length<hr/><span id="measure-output" class="output-text" onmousedown="event.stopPropagation()">0.0</span></div>
+
+</body>
+
+<script>
+    var container = document.getElementById( 'container');
+    var renderer,scene,camera;
+    var stats,controls;
+
+    var raycaster,mouse,particleMaterial;
+
+    var clock = new THREE.Clock();
+    var cloc1 = new THREE.Clock();
+    var cloc2 = new THREE.Clock();
+
+    renderer= new THREE.WebGLRenderer( { antialias: false } );
+    renderer.setClearColor( 0xffffff );
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( window.innerWidth, window.innerHeight);
+
+    container.appendChild( renderer.domElement );
+
+    camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.01, 200 );
+    camera.position.z = 4;
+    //camera.position.set(0,-4,1.5); //北航研究院
+    //camera.position.set(0,-4,1.5); //天津
+    //camera.lookAt({x:0,y:0,z:0});
+
+    controls = new THREE.TrackballControls( camera,renderer.domElement ); //第二个参数防止该漫游器和dat.gui冲突
+    // controls = new THREE.OrbitControls( camera,renderer.domElement );
+    controls.rotateSpeed = 2.0;
+    controls.zoomSpeed = 1.5;
+    controls.panSpeed = 0.8;
+    controls.noZoom = false;
+    controls.noPan = false;
+    controls.staticMoving = true;
+    controls.dynamicDampingFactor = 0.3;
+    //controls.keys = [ 65, 83, 68 ];
+
+    // controls.screenSpacePanning = false;
+    controls.rotation = Math.PI / 12;
+    controls.maxPolarAngle = Math.PI;
+
+    controls.addEventListener( 'change', render );  //重要
+
+    scene = new THREE.Scene();
+    //scene.fog = new THREE.Fog( 0x050505, 2000, 3500 );
+    scene.add( new THREE.AmbientLight( 0x444444 ) );
+
+
+    var light1 = new THREE.DirectionalLight( 0xffffff, 1.0 );
+    light1.position.set( -1, 0, -1 );
+    scene.add( light1 );
+
+    var light2 = new THREE.DirectionalLight( 0xffffff, 1.0 );
+    light2.position.set( -1, -1, 1 );
+    scene.add( light2 );
+
+
+    function getURLParameter(name) {
+        return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+    }
+
+    var model = getURLParameter('model') || "models/tianjin_jpg.nxs";
+
+    //var model = getURLParameter('model') || "models/LOD2_png_1.nxs";
+    //var nexus_obj = new NexusObject(model, renderer, render);
+
+    var nexus_obj = new NexusObject( model, renderer, render /*,material*/);
+    scene.add(nexus_obj);
+
+    // FBX model
+    var mixers = [];
+    var loader1 = new THREE.FBXLoader();
+    loader1.load( '../models/fbx/test/m_1.FBX', function ( object ) {
+        object.mixer = new THREE.AnimationMixer( object );   //场景中特定对象的动画播放器
+        mixers.push( object.mixer );
+
+        var action = object.mixer.clipAction( object.animations[ 1 ] );  //返回可以控制动画的对象
+        action.play(); //启动动画动作
+
+        object.rotation.x = Math.PI/2;
+        object.scale.multiplyScalar(0.001); //缩放
+        //let positoin = [-0.06,-0.1,0.007];
+        let positoin = [-0.6,-0.07,0.018];
+        object.position.x = positoin[0]-0.06;
+        object.position.y = positoin[1];
+        object.position.z = positoin[2]+0.001;
+
+
+        object.traverse( function ( child ) {  //设置模型的每个部位都可以投影
+
+            if ( child.isMesh ) {
+
+                child.castShadow = true;
+                child.receiveShadow = true;
+
+            }
+
+        } );
+
+        scene.add( object );
+
+    } );
+
+
+    THREE.Loader.Handlers.add(/\.tga$/i, new THREE.TGALoader());
+    var mixers2 = [];
+    var loader2 = new THREE.FBXLoader();
+    function anit (obj){
+
+    }
+
+    loader2.load( '../models/fbx/FBX 2013/aaajpg.FBX', function( object ) {
+        object.mixer = new THREE.AnimationMixer( object );   //场景中特定对象的动画播放器
+        mixers2.push( object.mixer );
+
+        var action = object.mixer.clipAction( object.animations[ 0 ] );  //返回可以控制动画的对象
+        action.play(); //启动动画动作
+
+        object.rotation.y = Math.PI/2;
+        object.rotation.x = Math.PI/2;
+
+        object.scale.multiplyScalar(0.0001); //缩放
+        let positoin = [-0.65,-0.07,0.018];
+        object.position.x = positoin[0];
+        object.position.y = positoin[1];
+        object.position.z = positoin[2];
+
+
+        object.traverse( function ( child ) {  //设置模型的每个部位都可以投影
+
+            if ( child.isMesh ) {
+
+                child.castShadow = true;
+                child.receiveShadow = true;
+
+            }
+
+        } );
+
+        scene.add( object );
+
+    } );
+
+    var mixers3 = [];
+    loader2.load( '../models/fbx/2/aaa.FBX', function( object ) {
+        object.mixer = new THREE.AnimationMixer( object );   //场景中特定对象的动画播放器
+        mixers3.push( object.mixer );
+
+        var action = object.mixer.clipAction( object.animations[ 0 ] );  //返回可以控制动画的对象
+        action.play(); //启动动画动作
+
+        object.rotation.y = Math.PI/2;
+        object.rotation.x = Math.PI/2;
+
+        object.scale.multiplyScalar(0.0003); //缩放
+        let positoin = [-0.7,-0.07,0.02];
+        object.position.x = positoin[0];
+        object.position.y = positoin[1];
+        object.position.z = positoin[2];
+
+
+        object.traverse( function ( child ) {  //设置模型的每个部位都可以投影
+
+            if ( child.isMesh ) {
+
+                child.castShadow = true;
+                child.receiveShadow = true;
+
+            }
+
+        } );
+
+        scene.add( object );
+
+    } );
+
+    raycaster = new THREE.Raycaster();
+    mouse = new THREE.Vector2();
+
+    //document.addEventListener("mousedown",onDocumentMouseDown,false); //关闭对html事件的相应
+    document.addEventListener("touchstart",onDocumentTouchStart,false);
+    window.addEventListener( 'resize', onWindowResize, false );
+    render();
+
+
+    function onDocumentTouchStart( event ) {
+        event.preventDefault();
+        event.clientX = event.touches[0].clientX;
+        event.clientY = event.touches[0].clientY;
+        onDocumentMouseDown( event );
+    }
+
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        controls.handleResize();
+        controls.update();
+        render();
+    }
+
+    function animate() {
+        render();
+        //stats.update(); 帧数
+        // if (object.position.x <-0.06) {
+        //     object.position.x += 0.001;
+        // }
+        //
+        // if (-0.06 - object.position.x <0.00001 && object.position.y <0.25) {
+        // 	object.position.y += 0.001;
+        // }
+
+        //fbx骨骼动画
+        if ( mixers.length > 0 ) {
+
+            for ( var i = 0; i < mixers.length; i ++ ) {
+
+                mixers[ i ].update( clock.getDelta() );
+                if (mixers[i]._root.position.x < 0.123)
+                    mixers[i]._root.position.x += 0.0002;
+                // if (mixers[i]._root.position.x + 0.025 > 0.000001){
+                //     mixers[i]._root.position.y = -0.07-0.02;
+                //     mixers[i]._root.position.z = 0.018 - 0.005;
+                // }
+                else
+                    mixers[i]._root.position.x -= 0.0004;
+
+            }
+
+        }
+
+        if ( mixers2.length > 0 ) {
+
+            for ( var i = 0; i < mixers2.length; i ++ ) {
+
+                mixers2[ i ].update( cloc1.getDelta() );
+                if (mixers2[i]._root.position.x < 0.123){
+                    mixers2[i]._root.position.x += 0.0002;
+                    if (mixers2[i]._root.position.x + 0.025 > 0.000001){
+                        mixers2[i]._root.position.y = -0.07-0.02;
+                        mixers2[i]._root.position.z = 0.018 - 0.005;
+                    }
+                }
+                else
+                // (mixers2[i]._root.position.x > 0.132){
+                    mixers2[i]._root.position.x -= 0.0004;
+
+
+            }
+
+        }
+        if ( mixers3.length > 0 ) {
+
+            for ( var i = 0; i < mixers2.length; i ++ ) {
+
+                mixers3[ i ].update( cloc2.getDelta() );
+                if (mixers3[i]._root.position.x < 0.123){
+                    mixers3[i]._root.position.x += 0.0002;
+                    if (mixers3[i]._root.position.x + 0.025 > 0.000001){
+                        mixers3[i]._root.position.y = -0.07-0.02;
+                        mixers3[i]._root.position.z = 0.018 - 0.005;
+                    }
+                }
+                else
+                // (mixers2[i]._root.position.x > 0.132){
+                    mixers3[i]._root.position.x -= 0.0004;
+
+
+            }
+
+        }
+
+        requestAnimationFrame( animate );
+        controls.update();
+    }
+
+    function render() {
+        Nexus.beginFrame(renderer.context);
+        renderer.render( scene, camera );
+        Nexus.endFrame(renderer.context);
+    }
+
+
+    function actionsToolbar(action) {
+        if(action=='home')
+        {
+            controls.reset();
+        }
+        else if (action == "zoomin"){
+            controls.action = 2;
+            controls.track(controls.viewMatrix,0.0,0.0,1.1);
+        }
+        else if (action=="light" || action =="light_on" ){
+            $('#light').css("visibility", "hidden");
+            $('#light_on').css("visibility", "visible");
+            _spidergl.postDrawEvent();
+        }
+        else if(action=="measure"||action == "measure_on")
+        {
+            //measureSwitch();
+        }
+
+    }
+
+
+    init3D();
+    animate();
+    //   $('#measure-output').html(measure.toFixed(2) + " mm");
+
+</script>
+
+
+</html>
+

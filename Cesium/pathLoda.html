@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>clamp to 3D title</title>
+
+    <script src="js/Build/Cesium/Cesium.js"></script>
+    <link href="js/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+
+</head>
+<body>
+
+<div id="cesiumContainer" class="fullSize"></div>
+<div id="loadingOverlay"><h1>Loading...</h1></div>
+<div id="toolbar"></div>
+
+<script>
+    Cesium.Ion.defaultAccessToken="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIzMTc3NjhkOC0xYmExLTQwOTYtYTYwZS05YzQ4YzNhZWVhM2QiLCJpZCI6NTkwNywic2NvcGVzIjpbImFzciIsImdjIl0sImlhdCI6MTU0NDU5NTA4Nn0.-4tFtV4jM36IJTT7s8S1VrioG-hZSA9Wf9eKtR-kS7k";
+
+    var viewer = new Cesium.Viewer('cesiumContainer', {
+        terrainProvider : Cesium.createWorldTerrain()
+    });
+    var scene = viewer.scene;
+    var clock = viewer.clock;
+
+    var entity;
+    var positionProperty;
+    // var dataSourcePromise = Cesium.CzmlDataSource.load('SampleData/ClampToGround.czml');
+    // viewer.dataSources.add(dataSourcePromise).then(function(dataSource) {
+    //     entity = dataSource.entities.getById('CesiumMilkTruck');
+    //     positionProperty = entity.position;
+    // });
+    //
+    // var tileset = scene.primitives.add(
+    //     new Cesium.Cesium3DTileset({
+    //         url: Cesium.IonResource.fromAssetId(6074)
+    //     })
+    // );
+    //
+    // viewer.camera.setView({
+    //     destination: new Cesium.Cartesian3(1216413.8845586285, -4736357.493351395, 4081299.715698949),
+    //     orientation: new Cesium.HeadingPitchRoll(4.2892217081808806, -0.4799070147502502, 6.279789177843313),
+    //     endTransform : Cesium.Matrix4.IDENTITY
+    // });
+    //
+    // if (scene.clampToHeightSupported) {
+    //     tileset.initialTilesLoaded.addEventListener(start);
+    // } else {
+    //     console.log('This browser does not support clampToHeight.');
+    // }
+    //
+    // function start() {
+    //     clock.shouldAnimate = true;
+    //     var objectsToExclude = [entity];
+    //     scene.postRender.addEventListener(function() {
+    //         var position = positionProperty.getValue(clock.currentTime);
+    //         entity.position = scene.clampToHeight(position, objectsToExclude);
+    //     });
+    // }
+
+    var longitude = 117;
+    var latitude = 39.12;
+    var height = 50.63472936410466;
+    var heading = 90;
+    var tileset = new Cesium.Cesium3DTileset({
+        //url:"SampleData/Batchedsene_texture_z/tileset.json"
+         uri:"SampleData/Productions/tileset/Tileset.json"
+       //url:"Sandcastle/Scene/Production_2.json",
+      //  url: 'DATA/YJY/Scene/Production_1.json',
+       // modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(Cesium.Cartesian3.fromDegrees(120.506967, 36.18869936, 170.81288381)),
+       //  url:"SampleData/Productions/tileset/Tileset.json"
+        // url:"Production_cesium02/Scene/Production_cesium02.json"
+        //url:"/home/yxg/Data/PROJ/Production_cesium all/Scene/Production_cesium_all.json"
+    });
+
+    viewer.scene.primitives.add(tileset);
+
+    tileset.readyPromise.then(function(argument) {
+        var position = Cesium.Cartesian3.fromDegrees(120.506967, 36.18869936, 270.81288381);
+        var mat = Cesium.Transforms.eastNorthUpToFixedFrame(position);
+      //  var rotationX = Cesium.Matrix4.fromRotationTranslation(Cesium.Matrix3.fromRotationY(Cesium.Math.toRadians(heading)));
+       // Cesium.Matrix4.multiply(mat, rotationX, mat);
+        tileset.modelMatrix = mat;
+        //viewer.camera.flyTo({destination: Cesium.Cartesian3.fromDegrees(longitude, latitude, height + 10)});
+       // viewer.camera.flyTo(tileset);
+    });
+    var boundingSphere = new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(120.506967, 36.18869936, 37.81288381), 566.9475637);
+    // Override behavior of home button
+    viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(commandInfo) {
+        // Fly to custom position
+        viewer.camera.flyToBoundingSphere(boundingSphere);
+
+        // Tell the home button not to do anything
+        commandInfo.cancel = true;
+    });
+    viewer.camera.flyToBoundingSphere(boundingSphere, {duration: 0});
+    // viewer.zoomTo(tileset);
+
+</script>
+</body>
+</html>

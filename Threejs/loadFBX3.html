@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>three.js - FBX loader 3</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #fff;
+            color: #fff;
+            margin: 0px;
+            overflow: hidden;
+        }
+        #info {
+            color: #fff;
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display:block;
+        }
+        #replaceTexture {
+            margin-top: 10px;
+        }
+        #info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
+    </style>
+</head>
+
+<body>
+<div id="info">
+    <input type="button" id="changeAction" value="ChangeAction" />
+</div>
+
+<script src="js/three_dev.js"></script>
+
+<script src="js/libs/inflate.min.js"></script>
+<script src="js/loaders/TGALoader_dev.js"></script>
+<script src="js/loaders/FBXLoader.js"></script>
+
+
+<script src="js/controls/OrbitControls.js"></script>
+
+<script src="js/Detector.js"></script>
+<script src="js/libs/stats.min.js"></script>
+<script src="js/loaders/GLTFLoader.js"></script>
+
+<script>
+
+    if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+    var container, stats, controls;
+    var camera, scene, renderer, light;
+    var changAction = false;
+    var action;
+
+    var clock = new THREE.Clock();
+
+    var mixers = [];
+    var actions = [];
+
+    init();
+
+    function init() {
+
+        container = document.createElement( 'div' );
+        document.body.appendChild( container );
+
+        camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.01, 200 );
+
+        scene = new THREE.Scene();
+
+        // grid
+        var gridHelper = new THREE.GridHelper( 28, 28, 0x303030, 0x303030 );
+        gridHelper.position.set( 0, - 0.04, 0 );
+        scene.add( gridHelper );
+
+        // stats
+
+        // model
+        var manager = new THREE.LoadingManager();
+        manager.onProgress = function( item, loaded, total ) {
+
+            console.log( item, loaded, total );
+
+        };
+
+        var onProgress = function( xhr ) {
+
+            if ( xhr.lengthComputable ) {
+
+                var percentComplete = xhr.loaded / xhr.total * 100;
+                console.log( Math.round( percentComplete, 2 ) + '% downloaded' );
+
+            }
+
+        };
+
+        var onError = function( xhr ) {
+        };
+
+
+       THREE.Loader.Handlers.add(/\.tga$/i, new THREE.TGALoader());
+       var loader1 = new THREE.GLTFLoader(manager);
+       var loader = new THREE.FBXLoader(manager);
+        // var loader =  new THREE.ObjectLoader();
+       //var loader = new THREE.JSONLoader();
+
+       //    loader.load( 'models/fbx/aaajpg.FBX', function( object ) {
+       //  loader.load( 'models/fbx/FBX 2013/boy_action_jpg.FBX', function( object ) {  //boy_em_jpg
+        // loader.load( 'models/fbx/2/business06_m_mpoly_tga.FBX', function( object ) {
+        // loader.load( 'models/fbx/children/boy021.FBX', function( object ) {
+        // loader.load( 'models/fbx/children/girl02.FBX', function ( object ){
+        //  loader.load( 'models/fbx/1/bbb01.FBX', function ( object ){
+        // loader.load( 'models/fbx/2/man_tga.FBX', function( object ) {
+        // loader.load( 'models/fbx/test/naruto.fbx', function( object ) {
+       // loader.load('models/fbx/SambaDancing.fbx', function( object ) {  //0:walk ,1:run
+       // loader.load( './nex-html/models/fire/zhandouyuan01.FBX', function ( object ) {
+       // loader.load('models/fbx/3/girl1.FBX', function( object ) {  //0:walk ,1:run
+       //  loader1.load('./.models/gltf/_out/man_all_action.gltf', function( object ) {  //0:walk ,1:run
+            // mesh = object;
+        // loader1.load('./nex-html/models/fire/zhandouyuan03_out/zhandouyuan03.gltf', function( object ) {  //0:walk ,1:run
+        //      object.mixer = new THREE.AnimationMixer(object);   //动画播放器
+        //      mixers.push(object.mixer);
+        //
+        //      object.scale.multiplyScalar(10); //模型缩放
+        //      action = object.mixer.clipAction(object.animations[1]);
+        //
+        //      actions.push(action);
+        //      actions.push( object.mixer.clipAction(object.animations[0]) );
+        //
+        //      action.play();
+        //
+        //      //scene.add(object);
+        //
+        // }, onProgress, onError );
+
+
+
+        // loader1.load('./nex-html/models/fire/zhandouyuan03_out/zhandouyuan03.gltf', function( gltf ) {  //0:walk ,1:run
+        loader1.load('./nex-html/models/fire/xiaofangqicai/FireCar/Firetruck_JP18.gltf', function( gltf ) {  //0:walk ,1:run
+      //   loader1.load('models/gltf/_out/man_all_action.gltf', function( gltf ) {  //0:walk ,1:run
+             // 调用动画
+             var mixer = new THREE.AnimationMixer( gltf.scene.children[0] );
+             mixer.clipAction( gltf.animations[ 0 ] ).setDuration( 1 ).play();
+             mixers.push( mixer );
+             gltf.scene.scale.multiplyScalar(0.5); //缩放
+            //
+            let positoin = [0.0,0.0,0.0];
+            gltf.position.x = positoin[0];
+            gltf.position.y = positoin[1]+2;
+            gltf.position.z = positoin[2];
+             scene.add( gltf.scene ); // 将模型引入three
+
+        }, onProgress, onError );
+
+        renderer = new THREE.WebGLRenderer();
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setClearColor( 0xffffff );
+        container.appendChild( renderer.domElement );
+
+        // controls, camera
+        controls = new THREE.OrbitControls( camera, renderer.domElement );
+        controls.target.set( 0, 0, 0 );
+        camera.position.set( 0, 0, 28 );
+        //camera.position.set( 0, 0, 1028 );
+        controls.update();
+
+        window.addEventListener( 'resize', onWindowResize, false );
+
+        light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+        light.position.set(0, 1, 0);
+        scene.add(light);
+
+        light = new THREE.DirectionalLight(0xffffff, 1.0);
+        light.position.set(0, 1, 0);
+        scene.add(light);
+
+        // interaction
+
+        var button = document.getElementById("changeAction");
+        button.addEventListener("click", onChangeAction);
+
+
+        animate();
+
+    }
+
+    //
+
+    function onChangeAction() {
+        if (!changAction) {
+           actions[1].stop();
+           actions[0].play();
+           changAction = true;
+        }
+        else {
+            actions[0].stop();
+            actions[1].play();
+            changAction = false;
+        }
+    }
+
+
+
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+    }
+
+    //
+
+    function animate() {
+
+        requestAnimationFrame( animate );
+
+        if ( mixers.length > 0 ) {
+
+            for ( var i = 0; i < mixers.length; i ++ ) {
+
+                mixers[ i ].update( clock.getDelta() );
+
+            }
+
+        }
+
+
+        render();
+
+    }
+
+    function render() {
+
+        renderer.render( scene, camera );
+
+    }
+
+</script>
+
+</body>
+</html>

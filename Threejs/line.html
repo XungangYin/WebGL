@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ThreeJS框架</title>
+    <script src = "js/three.js"> </script>
+    <script src = "js/utils/SceneUtils.js"></script>
+    <style type="text/css">
+        div#canvas-frame {
+            border:none;
+            cursor:pointer;
+            width: 100%;
+            height: 600px;
+            background-color: #EEEEEE;
+        }
+    </style>
+
+    <script>
+        var renderer;
+        function initThree() {
+            width  = document.getElementById('canvas-frame').clientWidth;
+            height = document.getElementById('canvas-frame').clientHeight;
+            renderer = new THREE.WebGLRenderer({antialias:true});
+            renderer.setSize(width,height);
+            document.getElementById('canvas-frame').appendChild(renderer.domElement);
+            renderer.setClearColor(0xFFFFFF,1.0);
+            renderer.shadowMapEnabled = true;
+
+        }
+
+        var camera;
+        function  initcamera() {
+            camera  = new THREE.PerspectiveCamera(45,width/height,1,10000);
+            camera.position.x = 0;
+            camera.position.y = 0;
+            camera.position.z = 100;
+            camera.up.x = 0;
+            camera.up.y = 1;
+            camera.up.z = 0;
+            camera.lookAt(0,0,0);
+        }
+
+        var scene;
+        function initscene() {
+            scene = new THREE.Scene();
+        }
+
+        var light;
+        function initlight() {
+            light = new THREE.DirectionalLight(0xFF0000,1.0,0);
+            light.position.set(100,100,200);
+            scene.add(light);
+        }
+
+        //var cube;
+        function initcube() {
+            var geometry = new THREE.Geometry();
+            var material = new THREE.LineBasicMaterial({vertexColors:true}); //vertexColors定义线条是否使用定点颜色
+            var color1 = new THREE.Color(0x444444),color2 = new THREE.Color(0xFF0000);
+
+            //线段的材质可以由两点的颜色决定
+            var p1 = new THREE.Vector3(10,-10,0);
+            var p2 = new THREE.Vector3(10,10,0);
+            var p3 = new THREE.Vector3(5,10,0);
+            var p4 = new THREE.Vector3(-10,-2,0);
+
+            geometry.vertices.push(p1);
+            geometry.vertices.push(p2);
+            geometry.vertices.push(p3);
+            geometry.vertices.push(p4);
+            geometry.colors.push(color1,color2,color2,color1);
+
+            material.linewidth = 100;
+            // var line = new THREE.Line(geometry,material,THREE.LineSegments);
+            var line = new THREE.LineLoop(geometry,material);
+
+            scene.add(line);
+
+
+        }
+
+
+        function drawShape() {
+            var shape = new THREE.Shape();
+            shape.moveTo(10,10);
+            shape.lineTo(10,40);
+            shape.bezierCurveTo(15,25,25,25,30,40);
+
+            shape.splineThru(
+                [new THREE.Vector2(32,30),
+                 new THREE.Vector2(28,20),
+                 new THREE.Vector2(30,10)
+                ]);
+
+            shape.quadraticCurveTo(20,15,10,10);
+
+            //add eye hole one
+            var hole1 = new THREE.Path();
+            hole1.absellipse(16,24,2,3,0,Math.PI*2,true);
+            shape.holes.push(hole1);
+
+            var hole2 = new THREE.Path();
+            hole2.absellipse(23,24,2,3,0,Math.PI*2,true);
+            shape.holes.push(hole2);
+
+            var hole3 = new THREE.Path();
+            hole3.absarc(20,16,2,0,Math.PI,true);
+            shape.holes.push(hole3);
+            return shape;
+        }
+
+       // var shapeGeometry = new THREE.ShapeGeometry(drawShape());
+
+        function creatMesh(geom) {
+            var material = new THREE.MeshNormalMaterial();
+            material.side = THREE.DoubleSide;
+            var wireFrame = new THREE.MeshBasicMaterial();
+            wireFrame.wireframe = true;
+
+            //creat a multimatematrial
+            var mesh = THREE.SceneUtils.createMultiMaterialObject(geom,[material,wireFrame]);
+            return mesh;
+        }
+
+        var shape = creatMesh(new THREE.ShapeGeometry(drawShape()));
+
+
+        function threeStart() {
+            initThree();
+            initcamera();
+            initscene();
+            initlight();
+            initcube();
+          //  scene.add(shape);
+            renderer.clear();
+            renderer.render(scene,camera);
+        }
+
+    </script>
+</head>
+<body onload="threeStart();">
+    <div id = "canvas-frame"></div>>
+</body>
+</html>

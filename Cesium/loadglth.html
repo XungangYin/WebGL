@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>loadGltf</title>
+
+    <script src="js/Build/Cesium/Cesium.js"></script>
+    <script src="Sandcastle/Sandcastle-header.js"></script>
+    <link href="js/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+</head>
+<body>
+
+<div id = "cesiumContainer" style="width: 100%;height: 100%"></div>
+
+<script>
+    let view = new Cesium.Viewer('cesiumContainer',{
+        animation:false,
+        timeline:false,
+//vrButton: true
+    });
+    let scene = view.scene;
+    //位置
+    let position = Cesium.Cartesian3.fromDegrees(116.080591,39.919141,10);
+    let hpRoll = new Cesium.HeadingPitchRoll();
+    let fixedFrameTransforms = Cesium.Transforms.localFrameToFixedFrameGenerator('north','west');
+    //添加模型
+    let carPrimitive = scene.primitives.add(Cesium.Model.fromGltf({
+       url : 'SampleData/gltf/LOD0_1.gltf',
+       // uri:"SampleData/gltf/LOD0_1.gltf",
+        modelMatrix: Cesium.Transforms.headingPitchRollToFixedFrame(position,hpRoll,Cesium.Ellipsoid.WGS84,fixedFrameTransforms),
+        minimumPixelSize:128,
+        scale : 1.0
+    }));
+    view.camera.flyTo({
+        destination : Cesium.Cartesian3.fromDegrees(116.080591,39.919141,100)
+    });
+    view.zoomTo(carPrimitive);
+</script>
+
+</body>
+</html>

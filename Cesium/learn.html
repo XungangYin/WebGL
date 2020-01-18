@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>页面刷新后保留表单的值</title>
+    <style>
+        #savehistory{
+            width: 400px;margin: 0 auto;
+        }
+        .userselect{
+            -moz-user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body>
+<div id="savehistory">
+    <div class="userselect">hhhhhhhhhh</div>
+    <!--<input class="userselect" type="text"><br/>-->
+    <!--<input type="text"><br/>-->
+    <!--<input type="text"><br/>-->
+    <!--<input type="text"><br/>-->
+    <!--<input type="text"><br/>-->
+    <!--<input type="button" value="按钮1"><br/>-->
+    <!--<input type="button" value="按钮2"><br/>-->
+    <!--<input type="radio" name="sex"><br/>-->
+    <!--<input type="radio" name="sex"><br/>-->
+    <!--<input type="checkbox"><br/>-->
+    <!--<input type="checkbox"><br/>-->
+    <!--<input type="checkbox"><br/>-->
+    <textarea rows="10" cols="10">  </textarea>
+    <!--<input type="file">-->
+    <button id="save">一键缓存</button>
+</div>
+</body>
+<script src = "js/jquery.min.js"></script>
+<script>
+    $(function () {
+        var localMsg;
+        if(window.localStorage.formHistory){
+            localMsg=JSON.parse(window.localStorage.formHistory);
+            console.log(localMsg);
+        }
+        if(localMsg && localMsg.length>=1){
+            // var realIndex=0;
+            // for(var i=0;i<$('#savehistory input').length;i++){
+            //     if($($('#savehistory input')[i])[0].type=='text'){
+            //         $($('#savehistory input')[i]).val(localMsg[realIndex].text)
+            //         realIndex++;
+            //     }else if($($('#savehistory input')[i])[0].type=='radio'){
+            //         $($('#savehistory input')[i]).prop('checked',localMsg[realIndex].radio)
+            //         realIndex++;
+            //     }else if($($('#savehistory input')[i])[0].type=='checkbox'){
+            //         $($('#savehistory input')[i]).prop('checked',localMsg[realIndex].checkbox)
+            //         realIndex++;
+            //     }
+            // }
+
+            if($($('#savehistory textarea'))){
+                $($('#savehistory textarea')).val(localMsg[0].text);
+            }
+
+
+        }
+        $('#save').click(function () {
+            var history=[];
+            window.localStorage.formHistory='';
+            // for(var i=0;i<$('#savehistory input').length;i++){
+            //     if($($('#savehistory input')[i])[0].type=='text'){
+            //         history.push({"text":$($('#savehistory input')[i]).val()})
+            //     }else if($($('#savehistory input')[i])[0].type=='radio'){
+            //         history.push({"radio":$($('#savehistory input')[i]).attr('checked') ? 'checked' :''})
+            //     }else if($($('#savehistory input')[i])[0].type=='checkbox'){
+            //         history.push({"checkbox":$($('#savehistory input')[i]).attr('checked') ? 'checked' :''})
+            //     }
+            // }
+            if($($('#savehistory textarea'))){
+                  history.push({"text":$($('#savehistory textarea')).val()})
+                // $($('#savehistory textarea')).val(localMsg[6].val());
+            }
+            window.localStorage.formHistory=JSON.stringify(history)
+        })
+    })
+</script>
+</html>

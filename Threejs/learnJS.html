@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>LearnJS</title>
+    <script>
+        function myFunction() {
+            document.write(Date());
+        }
+
+        function argFunction(name,id) {   //参数函数
+            document.write(name +"  ",id);
+        }
+
+       /* js严格模式,这是测试用的*/
+        "use strict"
+    </script>
+
+</head>
+
+<body>
+<h1>这是第一个程序</h1>
+<p id = "demo">这是一个段落</p>
+<button onclick = "myFunction()">点击</br></button>
+<button onclick = "argFunction('nihao',5)">点击参数函数</button>
+<script>
+//如果调试输出是某变量undefined，则是表示该变量没有值，可以将其清空
+    {
+        var cars;
+        cars +=1;
+        cars = null;
+      //  document.write(cars);
+    }
+    { //代码快，js中代码快并行执行
+        var array = new Array(); //数组,使用关键字new来声明array的类型是 数组
+        array[0] = "a";
+        array[1] = "b";
+        var array = new Array(1,2,3);
+        var array = ["a","b","c"];
+    }
+    var i;
+    for (i = 0; i < array.length; i++)
+    {
+        document.write(array[i]+"</br>");
+    }
+
+    {
+    //js对象.有点类似于c/c++中的结构体。js对象，是变量的容器，也是键值对的容器
+        var person = {
+            firstname: "john", lastname: "hah", id: 411,
+            fullName: function () { //对象的方法
+                return this.firstname + " " + this.lastname; //必须加上this指针
+            }
+        };
+        document.write(person.firstname + "</br>");
+        document.write(person.id);
+    }
+
+    //弹出警告信息
+    //window.alert(5+6);
+    document.getElementById('demo').innerHTML = person.fullName(); //使用id来获取并修改html的元素,其中，字符串字面量可以是单引号或双引号
+</script>
+
+</body>
+</html>

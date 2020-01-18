@@ -1,0 +1,313 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>cesium 右键菜单</title>
+    <script src="https://cesiumjs.org/releases/1.51/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesiumjs.org/releases/1.51/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        html,body,#cesiumContainer{
+            padding: 0;
+            margin: 0;
+            width:100%;height:100%
+        }
+        ul,li{
+            padding: 0;
+            margin: 0;
+        }
+        .contextmenu-ul{
+            background: rgba(43,44,47,.6);
+            border: 1px solid #2b2c2f;
+            min-width: 110px;
+            list-style: none;
+            font-size: 14px;
+        }
+        .contextmenu-ul a{
+            border-bottom: 1px solid rgba(128, 128, 128, 0.5);
+            padding: 6px 10px;
+            transition: background-color .25s;
+            display: block;
+            clear: both;
+            font-weight: 400;
+            line-height: 1.6;
+            white-space: nowrap;
+            color: #edffff;
+            text-decoration: none;
+        }
+        .contextmenu-ul li:last-child a{
+            border-bottom:none;
+        }
+        .contextmenu-ul a:hover{
+            background-color: #444d59;
+            color: #fff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div id="cesiumContainer"></div>
+<script>
+    // cesium 秘钥
+    Cesium.Ion.defaultAccessToken="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIzMTc3NjhkOC0xYmExLTQwOTYtYTYwZS05YzQ4YzNhZWVhM2QiLCJpZCI6NTkwNywic2NvcGVzIjpbImFzciIsImdjIl0sImlhdCI6MTU0NDU5NTA4Nn0.-4tFtV4jM36IJTT7s8S1VrioG-hZSA9Wf9eKtR-kS7k";
+
+    var viewer = new Cesium.Viewer('cesiumContainer',{
+        geocoder: false,                //是否显示地名查找控件
+        sceneModePicker: false,         //是否显示投影方式控件
+        navigationHelpButton: false,    //是否显示帮助信息控件
+        baseLayerPicker: false,         //是否显示图层选择控件
+        homeButton: false,              //是否显示Home按钮
+        fullscreenButton: false,        //是否显示全屏按钮
+        timeline:false,                 //时间轴控件
+        animation:false,                //动画控件
+    });
+
+    //去cesium logo水印 或 css
+    viewer.cesiumWidget.creditContainer.style.display = "none";//去cesium logo水印
+
+    var cesiumContainer = document.querySelector("#cesiumContainer"),
+        div,
+        latObj,
+        tileset,
+        entitiesId,
+        ellipsoid = viewer.scene.globe.ellipsoid;
+
+    flyToSatrt()
+    function flyToSatrt(){
+        viewer.camera.flyTo({
+            destination : new Cesium.Cartesian3.fromDegrees(117.224601,31.808241,4071.32),
+            orientation :  {
+                heading : Cesium.Math.toRadians(356.7),
+                pitch : Cesium.Math.toRadians(-61),
+                roll : 0.0
+            }
+        })
+    }
+
+    var eText = [
+        {
+            text: "显示此处经纬度",
+            type: 'longlat'
+        },
+        {
+            text: "开启深度监测",
+            type: 'opendepth',
+        },
+        {
+            text: "关闭深度监测",
+            type: 'closedepth',
+        },
+        {
+            text: "初始视角",
+            type: "firstperspective",
+        }];
+
+    loadentity()
+    function loadentity(){
+        var i = [{
+            text: "删除对象",
+            type: "cesiumObj",
+            calback: function(e) {
+                var i = e.target;
+                i && viewer.entities.remove(i)
+            }
+        }];
+        // 添加点
+        viewer.entities.add({
+            name: "点",
+            position: Cesium.Cartesian3.fromDegrees(117.22193, 31.823638, 43.48),
+            billboard: {
+                image: "./img/biaoqian.png",
+                scale: 1,
+                horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+                verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
+            },
+            contextmenuItems: i
+        })
+        // 添加线
+        viewer.entities.add({
+            name: "线",
+            polyline: {
+                positions: Cesium.Cartesian3.fromDegreesArrayHeights([117.210308, 31.82165, 39.61, 117.217186, 31.819723, 35, 117.216931, 31.828351, 38.79, 117.214205, 31.828521, 41.01, 117.214378, 31.825595, 32.42]),
+                width: 7,
+                material: Cesium.Color.YELLOW.withAlpha(.5),
+                clampToGround: !0
+            },
+            contextmenuItems: i
+        })
+        // 添加面
+        viewer.entities.add({
+            name: "面",
+            polygon: {
+                hierarchy: new Cesium.PolygonHierarchy(Cesium.Cartesian3.fromDegreesArrayHeights([
+                    117.220448, 31.826988, 40.72,
+                    117.226041, 31.826992, 40.93,
+                    117.226094, 31.831935, 48.08,
+                    117.220457, 31.831917, 46.88,
+                    117.220448, 31.834688, 40.72
+                ])),
+                width: 5,
+                material: Cesium.Color.YELLOW.withAlpha(.3),
+                classificationType: Cesium.ClassificationType.BOTH
+            },
+            contextmenuItems: i
+        })
+        // 添加3DTileset
+        tileset = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({
+            url: "http://data.marsgis.cn/3dtiles/max-jiaoxuelou/tileset.json",
+        }))
+        tileset.name = "教学楼";
+        tileset.type = "3dtiles"
+        tileset.contextmenuItems = [{
+            text: "删除模型",
+            type: "3dtiles",
+        }]
+
+    }
+
+    // 禁用浏览器右键菜单
+    function doProhibit(){
+        if(window.Event)
+            document.captureEvents(Event.MOUSEUP);
+
+        function nocontextmenu() {
+            event.cancelBubble = true
+            event.returnvalue = false;
+            return false;
+        }
+
+        function norightclick(e) {
+            if (window.Event){
+                if (e.which == 2 || e.which == 3)
+                    return false;
+            }else if (event.button == 2 || event.button == 3) {
+                event.cancelBubble = true
+                event.returnvalue = false;
+                return false;
+            }
+        }
+        document.oncontextmenu = nocontextmenu;  // for IE5+
+        document.onmousedown = norightclick;  //
+    }
+    doProhibit()
+
+    loadRightClick();
+    function loadRightClick(){
+        var Handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+        Handler.setInputAction(function(e) {
+            var cartesian = viewer.camera.pickEllipsoid(e.position,ellipsoid);
+            if(cartesian){
+                // 苗卡尔椭球体的三维坐标 转 地图坐标（弧度）
+                var cartographic = viewer.scene.globe.ellipsoid.cartesianToCartographic(cartesian);
+                // 地图坐标（弧度） 转 十进制度数 toFixed保留小数点后几位
+                var log_String = Cesium.Math.toDegrees(cartographic.longitude).toFixed(8);//经度
+                var lat_String = Cesium.Math.toDegrees(cartographic.latitude).toFixed(8);//纬度
+                var alt_String = (viewer.camera.positionCartographic.height/1000).toFixed(2);//视角高
+                var elec_String = viewer.scene.globe.getHeight(cartographic).toFixed(4);//海拔
+                latObj = {log:log_String,lat:lat_String,alt:alt_String,elec:elec_String}
+            }
+            // 判断点击位置是否有实体
+            var pickedObject = viewer.scene.pick(e.position);
+
+            if(pickedObject == undefined){
+                loadUl(e.position)
+            }else{
+                if(pickedObject.tileset != undefined && pickedObject.tileset.type == "3dtiles"){
+                    loadUl(e.position,pickedObject.tileset.contextmenuItems,"3dtiles")
+                }else{
+                    entitiesId = pickedObject.id._id;
+                    // 判断实体
+                    var entity = viewer.entities.getById(entitiesId);
+                    if(entity != undefined){
+                        var type = ""
+                        if(entity.billboard != undefined){
+                            type = "billboard"
+                        }
+                        if(entity.polygon != undefined){
+                            type = "polygon"
+                        }
+                        if(entity.polyline != undefined){
+                            type = "polyline"
+                        }
+                        loadUl(e.position,entity._contextmenuItems,type)
+                    }
+                }
+            }
+        }, Cesium.ScreenSpaceEventType.RIGHT_CLICK);
+    }
+
+    /**
+     * 右键点击html
+     * @params {object} pos 屏幕坐标对象｛x:122,y:444｝
+     * @params {object} textArr 渲染文本数组对象
+     * @params {string} type 实体类型 undefined：空白区域
+     */
+    function loadUl(pos,textArr,type){
+        var con, lis = '';
+        if(textArr != undefined && type != undefined){
+            for(var i=0; i<textArr.length; i++){
+                lis += `<li class="li-item" data-index="20">
+                            <a href="javascript:rightliClick( '${textArr[i].type}' )" >${textArr[i].text}</a>
+                        </li>`
+            }
+        }else{
+            var terrainStatus = viewer.scene.globe.depthTestAgainstTerrain;
+            for(var i=0; i<eText.length; i++){
+                if(terrainStatus){
+                    if(eText[i].type == 'opendepth'){continue}
+                }else{
+                    if(eText[i].type == 'closedepth'){continue}
+                }
+                lis += `<li class="li-item" data-index="20">
+                            <a href="javascript:rightliClick( '${ eText[i].type }' )">${eText[i].text}</a>
+                        </li>`
+            }
+        }
+        con = `<ul class="contextmenu-ul">${lis}</ul>`
+        var divs = document.querySelectorAll(".contextmenu");
+        if(divs.length != 0){
+            cesiumContainer.removeChild(divs[0])
+        }
+        div = document.createElement('div')
+        div.className = "contextmenu"
+        div.style.top = pos.y + 'px'
+        div.style.left = pos.x + 'px'
+        div.style.position = 'fixed'
+        div.innerHTML = con;
+        cesiumContainer.append(div)
+    }
+
+    function rightliClick(type){
+        var divs = document.querySelectorAll(".contextmenu")
+        cesiumContainer.removeChild(divs[0]);
+        switch(type){
+            case 'longlat':
+                alert('F12 Console latObj:')
+                console.log("latObj:",latObj)
+                break;
+            case 'opendepth':
+                viewer.scene.globe.depthTestAgainstTerrain = true;
+                break;
+            case 'closedepth':
+                viewer.scene.globe.depthTestAgainstTerrain = false;
+                break;
+            case 'firstperspective':
+                flyToSatrt()
+                break;
+            case 'cesiumObj':
+                var entity = viewer.entities.getById(entitiesId);
+                if(entity != undefined){
+                    viewer.entities.remove(entity)
+                }
+                break;
+            case '3dtiles':
+                tileset.show = false;
+                break;
+        }
+    }
+
+</script>
+</body>
+</html>
